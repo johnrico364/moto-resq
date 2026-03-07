@@ -13,8 +13,9 @@ const UserSchema = new Schema(
     role: { type: String, enum: ["user", "admin"], default: "user" },
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true },
-    phone: { type: String, required: true },
     password: { type: String, required: true },
+    phone: { type: String, required: true },
+    profile_image: { type: String, required: false },
     vehicles: { type: [VehicleSchema], required: false },
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
