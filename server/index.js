@@ -3,6 +3,9 @@ import cors from 'cors';
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
+// Import routes
+import userRoutes from "./modules/user/user.route.js";
+
 const app = express();
 
 app.use(cors());
@@ -21,6 +24,7 @@ mongoose.connect(_dbURI).then(() => {
 app.use("/images", express.static("images"));
 
 // API ROUTES
+app.use("/api/users", userRoutes);
 
 
 
