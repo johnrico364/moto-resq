@@ -32,3 +32,19 @@ export const getTechnicianById = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
+export const updateTechnician = async (req, res) => {
+  try {
+    const technicianData = JSON.parse(req.body.data);
+    const profile_image = req.file?.filename;
+
+    const technician = await TechnicianService.updateTechnician(
+      req.params.id,
+      technicianData,
+      profile_image,
+    );
+    res.status(200).json({ success: true, data: technician });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};

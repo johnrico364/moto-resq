@@ -73,4 +73,54 @@ export const TechnicianService = {
     const technician = await Technician.findById(id);
     return technician;
   },
+  // UPDATE TECHNICIAN =========================================
+  async updateTechnician(id, data, profileImage) {
+    const technician = await Technician.findById(id);
+    if (!technician) throw new Error("Technician not found");
+
+    const updateFields = { ...data };
+
+    if (data?.email !== undefined) {
+      if (!validator.isEmail(data.email)) {
+        if (profileImage) await deleteTechnicianImageIfExists(path.join("images", "technician", profileImage));
+        throw new Error("Invalid email format");
+      }
+      const existing = await Technician.findOne({
+        email: data.email.toLowerCase(),
+        _id: { $ne: id },
+      });
+      if (existing) {
+        if (profileImage) await deleteTechnicianImageIfExists(path.join("images", "technician", profileImage));
+        throw new Error("Email already registered");
+      }
+      updateFields.email = data.email.toLowerCase();
+    }
+
+    if (data?.password) {
+      if (!validator.isStrongPassword(data.password)) {
+        if (profileImage) await deleteTechnicianImageIfExists(path.join("images", "technician", profileImage));
+        throw new Error(
+          "Password must contain one capital letter and one special character",
+        );
+      }
+      const salt = await bcrypt.genSalt(10);
+      updateFields.password = await bcrypt.hash(data.password, salt);
+    }
+
+    if (profileImage) {
+      const oldImg = technician.profile_image;
+      if (oldImg && oldImg !== "default.png") {
+        const oldPath = path.join("images", "technician", oldImg);
+        await deleteTechnicianImageIfExists(oldPath);
+      }
+      updateFields.profile_image = profileImage;
+    }
+
+    const updated = await Technician.findByIdAndUpdate(
+      id,
+      { $set: updateFields },
+      { new: true, runValidators: true },
+    );
+    return updated.toObject();
+  },
 };
