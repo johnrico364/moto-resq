@@ -65,17 +65,23 @@ export const TechnicianService = {
   },
   // GET ALL TECHNICIANS =========================================
   async getAllTechnicians() {
-    const technicians = await Technician.find();
+    const technicians = await Technician.find({ is_deleted: { $ne: true } });
     return technicians;
   },
   // GET TECHNICIAN BY ID =========================================
   async getTechnicianById(id) {
-    const technician = await Technician.findById(id);
+    const technician = await Technician.findOne({
+      _id: id,
+      is_deleted: { $ne: true },
+    });
     return technician;
   },
   // UPDATE TECHNICIAN =========================================
   async updateTechnician(id, data, profileImage) {
-    const technician = await Technician.findById(id);
+    const technician = await Technician.findOne({
+      _id: id,
+      is_deleted: { $ne: true },
+    });
     if (!technician) throw new Error("Technician not found");
 
     const updateFields = { ...data };
@@ -122,5 +128,18 @@ export const TechnicianService = {
       { new: true, runValidators: true },
     );
     return updated.toObject();
+  },
+  // SOFT DELETE TECHNICIAN =========================================
+  async softDeleteTechnician(id) {
+    const technician = await Technician.findOne({
+      _id: id,
+      is_deleted: { $ne: true },
+    });
+    if (!technician) throw new Error("Technician not found");
+
+    await Technician.findByIdAndUpdate(id, {
+      $set: { is_deleted: true, deleted_at: new Date() },
+    });
+    return { message: "Technician deleted successfully" };
   },
 };

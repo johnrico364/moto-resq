@@ -48,3 +48,12 @@ export const updateTechnician = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
+export const softDeleteTechnician = async (req, res) => {
+  try {
+    const result = await TechnicianService.softDeleteTechnician(req.params.id);
+    res.status(200).json({ success: true, ...result });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
