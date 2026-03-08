@@ -23,6 +23,7 @@ const TechnicianSchema = new Schema(
     email: { type: String, required: true, unique: true, lowercase: true },
     phone: { type: String, required: true },
     password: { type: String, required: true },
+    profile_image: { type: String, required: false, default: "default.png" },
     expertise: {
       type: [String],
       enum: ["Battery", "Towing", "Flat Tire", "Engine", "Electrical", "Brakes", "Other"],
@@ -34,6 +35,8 @@ const TechnicianSchema = new Schema(
     documents: { type: DocumentsSchema, default: {} },
     rating: { type: Number, default: 0, min: 0, max: 5 },
     total_reviews: { type: Number, default: 0 },
+    is_deleted: { type: Boolean, default: false },
+    deleted_at: { type: Date, default: null },
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
 );
