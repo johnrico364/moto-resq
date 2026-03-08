@@ -5,6 +5,7 @@ import {
   loginUser,
   logoutUser,
   getAllUsers,
+  getUserById
 } from "./user.controller.js";
 
 const router = express.Router();
@@ -16,4 +17,5 @@ router.patch("/auth/logout/:id", logoutUser);
 
 // users
 router.get("/", getAllUsers);
+router.get("/:id", getUserById);
 export default router;
