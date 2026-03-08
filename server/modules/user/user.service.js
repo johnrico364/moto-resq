@@ -88,7 +88,11 @@ export const UserService = {
     if (!user) {
       throw new Error("User not found");
     }
-    user = await User.findByIdAndUpdate(id, { status: "inactive" }, { new: true });
+    user = await User.findByIdAndUpdate(
+      id,
+      { status: "inactive" },
+      { returnDocument: "after" },
+    );
 
     return user;
   },
@@ -104,5 +108,40 @@ export const UserService = {
       throw new Error("User not found");
     }
     return user;
-    },
+  },
+  // UPDATE USER ===================================================================
+  async updateUser(id, data) {
+    // Get current user data to check existing profile_image
+    const user = await User.findById(id);
+    let oldImage = user?.profile_image;
+
+    console.log(data?.profile_image);
+
+    // If a new image is being set and it's different from the old one, remove the old image (unless it's default.png)
+    if (
+      data?.profile_image &&
+      oldImage &&
+      data.profile_image !== oldImage &&
+      oldImage !== "default.png"
+    ) {
+      const imgPath = path.join("images", "user", oldImage);
+      fs.unlink(imgPath, (err) => {
+        if (err) {
+          console.error(`Error deleting old user image: ${err}`);
+        } else {
+          console.log("Old user image deleted");
+        }
+      });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      {
+        ...data,
+        profile_image: data?.profile_image,
+      },
+      { returnDocument: "after" },
+    );
+    return updatedUser;
+  },
 };
