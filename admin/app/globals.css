@@ -5,4 +5,5 @@
 
 body {
   @apply text-black bg-white;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", sans-serif;
 }
