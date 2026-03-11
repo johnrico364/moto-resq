@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 // Import routes
 import userRoutes from "./modules/user/user.route.js";
 import technicianRoutes from "./modules/technician/technician.route.js";
+import chatRoutes from './modules/chat/chat.route.js'
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use("/images", express.static("images"));
 // API ROUTES
 app.use("/api/users", userRoutes);
 app.use("/api/technicians", technicianRoutes);
+app.use('/api/chats', chatRoutes)
 
 
 
