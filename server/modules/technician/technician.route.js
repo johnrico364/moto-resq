@@ -6,6 +6,7 @@ import {
   getTechnicianById,
   updateTechnician,
   softDeleteTechnician,
+  uploadDocuments
 } from "./technician.controller.js";
 
 const router = express.Router();
@@ -15,5 +16,6 @@ router.get("/", getAllTechnicians);
 router.get("/:id", getTechnicianById);
 router.patch("/:id", upload.single("image"), updateTechnician);
 router.delete("/:id", softDeleteTechnician);
+router.post('/documents', upload.array('images'), uploadDocuments)
 
 export default router;
