@@ -1,10 +1,14 @@
 import express from "express";
 import upload from "../../middlewear/multer.js";
-import { createServiceRequest } from "./service_request.controller.js";
+import {
+  createServiceRequest,
+  getAllServiceRequest,
+} from "./service_request.controller.js";
 
 const router = express.Router();
 
 router.post("/", upload.single("image"), createServiceRequest);
+router.get("/", getAllServiceRequest);
 
 // Error handler for multer limits (e.g., fileSize)
 router.use((err, req, res, next) => {

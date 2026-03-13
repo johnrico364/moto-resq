@@ -25,3 +25,12 @@ export const createServiceRequest = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
+export const getAllServiceRequest = async (req, res) => {
+  try {
+    const serviceRequest = await ServiceRequestService.getAllServiceRequest()
+    res.status(200).json({ success: true, data: serviceRequest });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+}
