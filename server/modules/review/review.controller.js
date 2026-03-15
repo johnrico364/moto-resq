@@ -10,3 +10,14 @@ export const createReview = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
+export const getReviewsByTechnician = async (req, res) => {
+  try {
+    const technician_id = req?.params?.technician_id;
+    const review = await ReviewService.getReviewsByTechnician(technician_id);
+
+    res.status(200).json({ success: true, data: review });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
