@@ -21,3 +21,14 @@ export const getReviewsByTechnician = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
+export const getReviewsByUser = async (req, res) => {
+  try {
+    const user_id = req?.params?.user_id;
+    const review = await ReviewService.getReviewsByUser(user_id);
+
+    res.status(200).json({ success: true, data: review });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};

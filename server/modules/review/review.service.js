@@ -18,4 +18,9 @@ export const ReviewService = {
     const reviews = await Review.find({ technician_id: id });
     return reviews;
   },
+  //   GET REVIEWS BY USER =======================================
+  async getReviewsByUser(id) {
+    const reviews = await Review.find({ user_id: id });
+    return reviews;
+  },
 };
