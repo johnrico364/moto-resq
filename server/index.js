@@ -7,7 +7,8 @@ import mongoose from "mongoose";
 import userRoutes from "./modules/user/user.route.js";
 import technicianRoutes from "./modules/technician/technician.route.js";
 import chatRoutes from "./modules/chat/chat.route.js";
-import serviceRequest from "./modules/service_request/service_request.route.js";
+import serviceRequestRoutes from "./modules/service_request/service_request.route.js";
+import reviewRoutes from "./modules/review/review.route.js";
 
 const app = express();
 
@@ -33,7 +34,8 @@ app.use("/images", express.static("images"));
 app.use("/api/users", userRoutes);
 app.use("/api/technicians", technicianRoutes);
 app.use("/api/chats", chatRoutes);
-app.use("/api/service-request", serviceRequest);
+app.use("/api/service-request", serviceRequestRoutes);
+app.use("/api/review", reviewRoutes);
 
 app.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${process.env.PORT}`);
