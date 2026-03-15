@@ -7,14 +7,18 @@ const ReviewSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "ServiceRequest",
       required: true,
-      unique: true,       // one review per service request
+      unique: true, // one review per service request
     },
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    technician_id: { type: Schema.Types.ObjectId, ref: "Technician", required: true },
+    technician_id: {
+      type: Schema.Types.ObjectId,
+      ref: "Technician",
+      required: true,
+    },
     rating: { type: Number, required: true, min: 1, max: 5 },
     comment: { type: String, default: "" },
   },
-  { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
+  { timestamps: true },
 );
 
 // Auto-update technician's average rating after a review is saved
@@ -24,7 +28,13 @@ ReviewSchema.post("save", async function () {
 
   const stats = await Review.aggregate([
     { $match: { technician_id: this.technician_id } },
-    { $group: { _id: "$technician_id", avgRating: { $avg: "$rating" }, count: { $sum: 1 } } },
+    {
+      $group: {
+        _id: "$technician_id",
+        avgRating: { $avg: "$rating" },
+        count: { $sum: 1 },
+      },
+    },
   ]);
 
   if (stats.length > 0) {
