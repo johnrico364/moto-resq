@@ -19,6 +19,9 @@ import {
   ReceiptText,
   Funnel,
   SquareArrowRightExit,
+  ChevronsUpDown,
+  ChevronRight,
+  ChevronLeft,
 } from "lucide-react";
 
 export const ICONS = {
@@ -42,4 +45,7 @@ export const ICONS = {
   receipt: ReceiptText,
   filter: Funnel,
   export: SquareArrowRightExit,
+  expand_all: ChevronsUpDown,
+  right: ChevronRight,
+  left: ChevronLeft,
 };

@@ -1,5 +1,6 @@
 "use client";
 import { Filter } from "@/app/Components/dashboard/filter/filter";
+import { UserTable } from "@/app/Components/dashboard/usertable/usertable";
 
 export default function Users() {
   return (
@@ -10,6 +11,7 @@ export default function Users() {
         </h1>
         <Filter />
       </div>
+      <UserTable />
     </div>
   );
 }
