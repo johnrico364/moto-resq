@@ -142,4 +142,8 @@ export const TechnicianService = {
     });
     return { message: "Technician deleted successfully" };
   },
+  // UPLOAD TECHNICIAN DOCUMENTS =======================================
+  async uploadTechnicianDocuments() {
+    
+  }
 };

@@ -31,4 +31,15 @@ router.post("/:id/vehicles", addUserVehicle);
 router.patch("/:id/vehicles/:vehicleId", updateUserVehicle);
 router.delete("/:id/vehicles/:vehicleId", deleteUserVehicle);
 
+// Error handler for multer limits (e.g., fileSize)
+router.use((err, req, res, next) => {
+  if (err && err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({
+      success: false,
+      message: "File size exceeds 5MB limit",
+    });
+  }
+  next(err);
+});
+
 export default router;

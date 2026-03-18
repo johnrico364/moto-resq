@@ -1,4 +1,4 @@
-import { TechnicianService } from "./technician.server.js";
+import { TechnicianService } from "./technician.service.js";
 
 export const createTechnician = async (req, res) => {
   try {
@@ -57,3 +57,7 @@ export const softDeleteTechnician = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
+export const uploadDocuments = async (req, res) => {
+
+}
