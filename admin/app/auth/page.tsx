@@ -13,6 +13,7 @@ export function Auth() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {},
   );
+  // const {login} = useLogin();
 
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
