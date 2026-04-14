@@ -1,31 +1,15 @@
 "use client";
 import { ICONS } from "@/app/Shared/Constants/icons";
+import { DashboardUser } from "@/app/Services/User/useUser";
 
-type UserStatus = "Active" | "Suspended";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  registeredDate: string;
-  status: UserStatus;
+interface UserTableProps {
+  users: DashboardUser[];
+  totalUsers: number;
+  pageSize: number;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
-
-const MOCK_USERS: User[] = [
-  { id: "01", name: "Charlene Barrientos", email: "charlene.barrientos@gmail.com", phone: "(09) 382 0438", registeredDate: "March 23, 2023", status: "Active" },
-  { id: "01", name: "Johnmark Pepito", email: "johnmarkpepito@gmail.com", phone: "(09) 382 0438", registeredDate: "March 23, 2023", status: "Active" },
-  { id: "01", name: "Francis Rey Ampoon", email: "francisampoon@gmail.com", phone: "(09) 382 0438", registeredDate: "March 23, 2023", status: "Suspended" },
-  { id: "01", name: "Joshua Playda", email: "joshuamarkplayda@gmail.com", phone: "(09) 382 0438", registeredDate: "March 23, 2023", status: "Active" },
-  { id: "01", name: "John Anthony Rico", email: "RicoJohn@gmail.com", phone: "(09) 382 0438", registeredDate: "March 23, 2023", status: "Active" },
-  { id: "01", name: "Kent Flores", email: "FloresKent@gmail.com", phone: "(09) 382 0438", registeredDate: "March 23, 2023", status: "Active" },
-  { id: "01", name: "Weah Joy Jacinto", email: "weahjacinto@gmail.com", phone: "(09) 382 0438", registeredDate: "March 23, 2023", status: "Suspended" },
-  { id: "01", name: "Christian Alicaba", email: "christianalicaba@gmail.com", phone: "(09) 382 0438", registeredDate: "March 23, 2023", status: "Active" },
-  { id: "01", name: "John Jeffrey Baclay", email: "johnjeffreybaclay@gmail.com", phone: "(09) 382 0438", registeredDate: "March 23, 2023", status: "Active" },
-];
-
-const PAGES = ["01", "02", "03", "04", "...", "10", "11"];
-const CURRENT_PAGE = "03";
 
 const columns = [
   "User ID",
@@ -37,7 +21,21 @@ const columns = [
   "Action",
 ];
 
-export function UserTable() {
+function toTitleCaseStatus(status: DashboardUser["status"]) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+export function UserTable({
+  users,
+  totalUsers,
+  pageSize,
+  currentPage,
+  totalPages,
+  onPageChange,
+}: UserTableProps) {
+  const shouldPaginate = totalUsers > 10;
+  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
+
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
       <table className="w-full text-sm">
@@ -57,7 +55,14 @@ export function UserTable() {
           </tr>
         </thead>
         <tbody>
-          {MOCK_USERS.map((user, idx) => (
+          {users.length === 0 ? (
+            <tr>
+              <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                No users found.
+              </td>
+            </tr>
+          ) : (
+            users.map((user, idx) => (
             <tr key={idx} className="border-b border-gray-100 last:border-0">
               <td className="px-6 py-5 text-gray-500">{user.id}</td>
               <td className="px-6 py-5 font-bold text-gray-900 whitespace-nowrap">{user.name}</td>
@@ -67,15 +72,17 @@ export function UserTable() {
               <td className="px-6 py-5">
                 <span
                   className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap ${
-                    user.status === "Active"
+                    user.status === "active"
                       ? "bg-green-100 text-green-600"
-                      : "bg-red-200 text-red-500"
+                      : user.status === "suspended"
+                        ? "bg-red-200 text-red-500"
+                        : "bg-gray-200 text-gray-600"
                   }`}
                 >
-                  {user.status === "Active" && (
+                  {user.status === "active" && (
                     <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
                   )}
-                  {user.status}
+                  {toTitleCaseStatus(user.status)}
                 </span>
               </td>
               <td className="px-6 py-5">
@@ -84,36 +91,48 @@ export function UserTable() {
                 </button>
               </td>
             </tr>
-          ))}
+            ))
+          )}
         </tbody>
       </table>
 
-      <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
-        <button className="flex items-center gap-1.5 text-gray-500 text-sm font-medium hover:text-gray-700">
+      {shouldPaginate && (
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+        <button
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+          className="flex items-center gap-1.5 text-gray-500 text-sm font-medium hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
           <ICONS.left className="w-4 h-4" />
           Previous
         </button>
 
         <div className="flex items-center gap-2">
-          {PAGES.map((page, idx) => (
+          {pageNumbers.map((page) => (
             <button
-              key={idx}
+              key={page}
+              onClick={() => onPageChange(page)}
               className={`w-9 h-9 rounded-full text-sm font-medium flex items-center justify-center ${
-                page === CURRENT_PAGE
+                page === currentPage
                   ? "bg-blue-600 text-white"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {page}
+              {String(page).padStart(2, "0")}
             </button>
           ))}
         </div>
 
-        <button className="flex items-center gap-1.5 text-gray-800 text-sm font-semibold hover:text-gray-600">
+        <button
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages || totalUsers <= pageSize}
+          className="flex items-center gap-1.5 text-gray-800 text-sm font-semibold hover:text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
           Next
           <ICONS.right className="w-4 h-4" />
         </button>
       </div>
+      )}
     </div>
   );
 }
