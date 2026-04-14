@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:user/pages/landing/landingpage.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -25,18 +26,34 @@ class _HomePageState extends State<HomePage> {
           // Dark header
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
+            padding: const EdgeInsets.fromLTRB(20, 15, 20, 20),
             decoration: const BoxDecoration(color: Color(0xFF1A2B3D)),
-            child: Center(
-              child: Text(
-                _navItems[_selectedIndex].title.toUpperCase(),
-                style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 1.2,
-              ),
-            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      _navItems[_selectedIndex].title.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  onPressed: () {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const LandingPage()),
+                      (route) => false,
+                    );
+                  },
+                ),
+              ],
             ),
           ),
           // White content area with rounded top corners
