@@ -9,24 +9,30 @@ export function Auth() {
   const { login } = useAuth();
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [errors, setErrors] = useState<{
+    email?: string;
+    password?: string;
+    form?: string;
+  }>(
     {},
   );
   // const {login} = useLogin();
 
   const validate = () => {
-    const newErrors: { email?: string; password?: string } = {};
+    const newErrors: { email?: string; password?: string; form?: string } = {};
+    const normalizedEmail = email.trim();
+    const normalizedPassword = password.trim();
 
-    if (!email) {
+    if (!normalizedEmail) {
       newErrors.email = "Email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       newErrors.email = "Enter a valid email address.";
     }
 
-    if (!password) {
+    if (!normalizedPassword) {
       newErrors.password = "Password is required.";
-    } else if (password.length < 6) {
+    } else if (normalizedPassword.length < 6) {
       newErrors.password = "Password must be at least 6 characters.";
     }
 
@@ -34,10 +40,25 @@ export function Auth() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const submit = () => {
+  const submit = async () => {
+    if (isSubmitting) return;
     if (!validate()) return;
+    setIsSubmitting(true);
     const data = { email, password };
-    login(data);
+    const result = await login(data);
+
+    if (!result.success) {
+      setErrors((prev) => ({
+        ...prev,
+        form: result.message || "Unable to sign in. Please try again.",
+      }));
+      console.log(JSON.stringify(result.message));
+      setIsSubmitting(false);
+      return;
+    }
+
+    setErrors({});
+    setIsSubmitting(false);
   };
 
   return (
@@ -83,6 +104,9 @@ export function Auth() {
           <p className="text-xs tracking-[0.25em] uppercase text-gray-400 mb-10">
             Sign in to continue
           </p>
+          {errors.form ? (
+            <p className="mb-4 text-sm text-red-500">{errors.form}</p>
+          ) : null}
           <TextInput
             label="Email"
             name="email"
@@ -91,8 +115,13 @@ export function Auth() {
             error={errors.email}
             onChange={(value) => {
               setEmail(value);
-              if (errors.email)
-                setErrors((prev) => ({ ...prev, email: undefined }));
+              if (errors.email || errors.form) {
+                setErrors((prev) => ({
+                  ...prev,
+                  email: undefined,
+                  form: undefined,
+                }));
+              }
             }}
           />
           <TextInput
@@ -104,12 +133,21 @@ export function Auth() {
             error={errors.password}
             onChange={(value) => {
               setPassword(value);
-              if (errors.password)
-                setErrors((prev) => ({ ...prev, password: undefined }));
+              if (errors.password || errors.form) {
+                setErrors((prev) => ({
+                  ...prev,
+                  password: undefined,
+                  form: undefined,
+                }));
+              }
             }}
           />
 
-          <LoginButton onPress={submit} text="Login" />
+          <LoginButton
+            onPress={submit}
+            text={isSubmitting ? "Signing In..." : "Login"}
+            disabled={isSubmitting}
+          />
         </div>
       </div>
     </div>
