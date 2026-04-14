@@ -2,13 +2,14 @@
 import { useState } from "react";
 import { Filter } from "@/app/Components/dashboard/filter/filter";
 import { AllMembers } from "@/app/Components/dashboard/allmembers/allmembers";
+import { useTechnicians } from "@/app/Services/Technicians/useTechnicians";
 
 const TABS = ["All Members", "Pending", "Cancelled"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function Technician() {
   const [activeTab, setActiveTab] = useState<Tab>("All Members");
-
+  const { technicians } = useTechnicians();
   return (
     <div className="flex flex-col w-full">
       <div className="flex items-center justify-between mt-6 mb-4">
@@ -33,7 +34,7 @@ export default function Technician() {
           </button>
         ))}
       </div>
-      <AllMembers />
+      <AllMembers technicians={technicians} />
     </div>
   );
 }
