@@ -7,6 +7,8 @@ import Technician from "../modules/technician/technician.model.js";
 import ServiceRequest from "../modules/service_request/service_request.model.js";
 import Chat from "../modules/chat/chat.model.js";
 import Review from "../modules/review/review.model.js";
+import UserActivityLog from "../modules/user_activity_log/user_activity_log.model.js";
+import TechnicianActivityLog from "../modules/technician_activity_log/technician_activity_log.model.js";
 
 dotenv.config();
 
@@ -110,6 +112,36 @@ function createTechnicians(hashedPassword) {
   return technicians;
 }
 
+function createUserActivityLogs(users) {
+  return users.flatMap((user, index) => [
+    {
+      user_id: user._id,
+      action: "LOGIN",
+      description: `Seed user ${index + 1} logged in.`,
+    },
+    {
+      user_id: user._id,
+      action: "CREATE_SERVICE_REQUEST",
+      description: `Seed user ${index + 1} created a service request.`,
+    },
+  ]);
+}
+
+function createTechnicianActivityLogs(technicians) {
+  return technicians.flatMap((technician, index) => [
+    {
+      technician_id: technician._id,
+      action: "SET_AVAILABILITY",
+      description: `Seed technician ${index + 1} updated availability status.`,
+    },
+    {
+      technician_id: technician._id,
+      action: "ACCEPT_SERVICE_REQUEST",
+      description: `Seed technician ${index + 1} accepted a service request.`,
+    },
+  ]);
+}
+
 async function seed() {
   const mongoUri = process.env.MONGO_DB_URI;
   if (!mongoUri) {
@@ -120,6 +152,8 @@ async function seed() {
   console.log("Connected to MongoDB");
 
   try {
+    await TechnicianActivityLog.deleteMany({});
+    await UserActivityLog.deleteMany({});
     await Review.deleteMany({});
     await Chat.deleteMany({});
     await ServiceRequest.deleteMany({});
@@ -131,6 +165,12 @@ async function seed() {
     const users = await User.insertMany(createUsers(hashedPassword));
     const technicians = await Technician.insertMany(
       createTechnicians(hashedPassword),
+    );
+    const userActivityLogs = await UserActivityLog.insertMany(
+      createUserActivityLogs(users),
+    );
+    const technicianActivityLogs = await TechnicianActivityLog.insertMany(
+      createTechnicianActivityLogs(technicians),
     );
 
     const serviceRequestPayloads = [];
@@ -224,6 +264,8 @@ async function seed() {
     console.log(`Service Requests: ${serviceRequests.length}`);
     console.log(`Chats: ${chats.length}`);
     console.log(`Reviews: ${reviews.length}`);
+    console.log(`User Activity Logs: ${userActivityLogs.length}`);
+    console.log(`Technician Activity Logs: ${technicianActivityLogs.length}`);
     console.log("Seed user password for all accounts: Seed123!");
   } finally {
     await mongoose.connection.close();
