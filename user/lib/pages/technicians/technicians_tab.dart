@@ -47,7 +47,7 @@ class TechniciansTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final w = MediaQuery.sizeOf(context).width;
     final h = MediaQuery.sizeOf(context).height;
-    final curveR = (w * 0.18).clamp(52.0, 80.0);
+    final curveR = (w * 0.085).clamp(26.0, 40.0);
     final top = MediaQuery.paddingOf(context).top;
     final bottomPad = MediaQuery.paddingOf(context).bottom + 8;
     final minHeaderH = (h * 0.30).clamp(248.0, 320.0);
@@ -116,7 +116,7 @@ class TechniciansTab extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                       FilterSquareButton(onTap: () {
-                        // TODO: Filter technicians
+                        
                       }),
                     ],
                   ),

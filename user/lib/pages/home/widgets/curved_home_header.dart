@@ -15,8 +15,9 @@ class CurvedHomeHeader extends StatelessWidget {
     final top = MediaQuery.paddingOf(context).top;
     final w = MediaQuery.sizeOf(context).width;
     final h = MediaQuery.sizeOf(context).height;
-    final curveR = (w * 0.18).clamp(52.0, 80.0);
-    final minBlueBlock = (h * 0.30).clamp(248.0, 320.0);
+    // Shallower bottom curve reads cleaner than a very round “bubble”.
+    final curveR = (w * 0.085).clamp(26.0, 40.0);
+    final minBlueBlock = (h * 0.28).clamp(232.0, 300.0);
 
     return Container(
       width: double.infinity,
@@ -35,19 +36,19 @@ class CurvedHomeHeader extends StatelessWidget {
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(curveR)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.navy.withValues(alpha: 0.28),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
+            color: AppColors.navy.withValues(alpha: 0.22),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(20, top + 18, 20, 44),
+        padding: EdgeInsets.fromLTRB(20, top + 18, 20, 36),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -78,7 +79,7 @@ class CurvedHomeHeader extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
                     onTap: () {
-                      // TODO: Search vehicles
+                    
                     },
                     child: const Padding(
                       padding: EdgeInsets.all(12),
@@ -88,27 +89,26 @@ class CurvedHomeHeader extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 26),
+            const SizedBox(height: 22),
             SizedBox(
-              height: 158,
+              height: 148,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 clipBehavior: Clip.none,
+                physics: const BouncingScrollPhysics(),
                 children: [
                   HomeVehicleCard(
                     icon: Icons.directions_car_rounded,
                     plate: 'ABC123',
                     subtitle: 'Toyota, Vios',
-                    iconBg: const Color(0xFFE3F2FD),
-                    iconColor: accentBlue,
+                    accentColor: accentBlue,
                   ),
                   const SizedBox(width: 14),
-                  HomeVehicleCard(
+                  const HomeVehicleCard(
                     icon: Icons.two_wheeler_rounded,
                     plate: 'DEF456',
                     subtitle: 'Yamaha, Mio',
-                    iconBg: const Color(0xFFE8EAF6),
-                    iconColor: Color(0xFF3949AB),
+                    accentColor: Color(0xFF3949AB),
                   ),
                 ],
               ),

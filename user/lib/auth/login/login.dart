@@ -146,7 +146,7 @@ class _AuthLoginScreenState extends State<AuthLoginScreen> {
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: () {
-                            // TODO: Forgot password
+                            
                           },
                           style: TextButton.styleFrom(
                             foregroundColor: _primaryNavy,
@@ -230,7 +230,7 @@ class _AuthLoginScreenState extends State<AuthLoginScreen> {
                               label: 'Google',
                               leading: const _GoogleMark(size: 20),
                               onPressed: () {
-                                // TODO: Google sign-in
+                              
                               },
                             ),
                           ),
@@ -242,7 +242,7 @@ class _AuthLoginScreenState extends State<AuthLoginScreen> {
                               label: 'Facebook',
                               leading: const Icon(Icons.facebook, size: 22, color: Colors.white),
                               onPressed: () {
-                                // TODO: Facebook sign-in
+                               
                               },
                             ),
                           ),

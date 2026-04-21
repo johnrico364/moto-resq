@@ -15,7 +15,7 @@ class ProfileTab extends StatelessWidget {
     final top = MediaQuery.paddingOf(context).top;
     final bottomPad = MediaQuery.paddingOf(context).bottom + 24;
     final headerH = (h * 0.30).clamp(248.0, 320.0);
-    final curveR = (w * 0.18).clamp(52.0, 80.0);
+    final curveR = (w * 0.085).clamp(26.0, 40.0);
     const avatarR = 52.0;
 
     return ColoredBox(
@@ -118,7 +118,7 @@ class ProfileTab extends StatelessWidget {
                     icon: Icons.person_outline_rounded,
                     label: 'Edit Profile',
                     onTap: () {
-                      // TODO: Edit profile
+                  
                     },
                   ),
                   const SizedBox(height: 12),
@@ -126,7 +126,7 @@ class ProfileTab extends StatelessWidget {
                     icon: Icons.directions_car_outlined,
                     label: 'Your vehicles',
                     onTap: () {
-                      // TODO: Your vehicles
+                      
                     },
                   ),
                   const SizedBox(height: 12),
@@ -134,7 +134,7 @@ class ProfileTab extends StatelessWidget {
                     icon: Icons.support_agent_rounded,
                     label: 'Help & Support',
                     onTap: () {
-                      // TODO: Help
+                     
                     },
                   ),
                   const SizedBox(height: 12),
@@ -142,7 +142,7 @@ class ProfileTab extends StatelessWidget {
                     icon: Icons.settings_outlined,
                     label: 'Setting',
                     onTap: () {
-                      // TODO: Settings
+                      
                     },
                   ),
                   const SizedBox(height: 40),
