@@ -2,8 +2,17 @@ import path from "path";
 import fs from "fs/promises";
 import validator from "validator";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 import Technician from "./technician.model.js";
+
+function resolveJwtExpiresIn() {
+  const raw = process.env.JWT_EXPIRES?.trim();
+  if (!raw) return "7d";
+  if (/^\d+$/.test(raw)) return parseInt(raw, 10);
+  if (/^\d+[smhdw]$/i.test(raw)) return raw;
+  return "7d";
+}
 
 async function deleteTechnicianImageIfExists(imgPath) {
   if (!imgPath) return;
@@ -22,10 +31,16 @@ export const TechnicianService = {
       ? path.join("images", "technician", profileImage)
       : null;
 
-    if (!data?.email || !validator.isEmail(data.email)) {
+    const normalizedPhone = data?.phone?.toString().trim();
+    if (!normalizedPhone) {
       await deleteTechnicianImageIfExists(img_path);
-      throw new Error("Invalid email format");
+      throw new Error("Phone is required");
     }
+
+    const rawEmail = data?.email?.toString().trim().toLowerCase();
+    const normalizedEmail = rawEmail && validator.isEmail(rawEmail)
+      ? rawEmail
+      : `${normalizedPhone.replace(/\s+/g, "").toLowerCase()}@technician.local`;
     if (!data?.password || !validator.isStrongPassword(data.password)) {
       await deleteTechnicianImageIfExists(img_path);
       throw new Error(
@@ -34,7 +49,7 @@ export const TechnicianService = {
     }
 
     const existing = await Technician.findOne({
-      email: data.email.toLowerCase(),
+      email: normalizedEmail,
     });
     if (existing) {
       await deleteTechnicianImageIfExists(img_path);
@@ -52,6 +67,8 @@ export const TechnicianService = {
       });
       const technician = await Technician.create({
         ...data,
+        email: normalizedEmail,
+        phone: normalizedPhone,
         password: hashPassword,
         profile_image: profileImage,
       });
@@ -62,6 +79,38 @@ export const TechnicianService = {
       await deleteTechnicianImageIfExists(img_path);
       throw err;
     }
+  },
+  // LOGIN TECHNICIAN =========================================
+  async loginTechnician(data) {
+    const identifier = data?.identifier?.toString().trim().toLowerCase();
+    const password = data?.password?.toString() ?? "";
+
+    if (!identifier || !password) {
+      throw new Error("Identifier and password are required");
+    }
+
+    const technician = await Technician.findOne({
+      $or: [{ email: identifier }, { phone: identifier }],
+      is_deleted: { $ne: true },
+    });
+    if (!technician) {
+      throw new Error("Account not found");
+    }
+
+    const isMatch = await bcrypt.compare(password, technician.password);
+    if (!isMatch) {
+      throw new Error("Invalid password");
+    }
+
+    const token = jwt.sign(
+      { technicianId: technician._id, email: technician.email },
+      process.env.JWT_SECRET,
+      { expiresIn: resolveJwtExpiresIn() },
+    );
+
+    const technicianObj = technician.toObject();
+    delete technicianObj.password;
+    return { technician: technicianObj, token };
   },
   // GET ALL TECHNICIANS =========================================
   async getAllTechnicians() {

@@ -6,6 +6,18 @@ import jwt from "jsonwebtoken";
 
 import User from "./user.model.js";
 
+/** Valid `expiresIn` for jsonwebtoken: seconds (number), or a short span like `"7d"`, `"12h"`. */
+function resolveJwtExpiresIn() {
+  const raw = process.env.JWT_EXPIRES?.trim();
+  if (!raw) return "7d";
+  if (/^\d+$/.test(raw)) return parseInt(raw, 10);
+  if (/^\d+[smhdw]$/i.test(raw)) return raw;
+  console.warn(
+    `JWT_EXPIRES "${raw}" is invalid; using "7d". Examples: 3600, "1h", "7d".`,
+  );
+  return "7d";
+}
+
 async function deleteUserImageIfExists(imgPath) {
   if (!imgPath) return;
   try {
@@ -73,7 +85,7 @@ export const UserService = {
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES || "7d" },
+      { expiresIn: resolveJwtExpiresIn() },
     );
 
     const userObj = user.toObject();

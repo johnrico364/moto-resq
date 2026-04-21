@@ -2,6 +2,7 @@ import express from "express";
 import upload from "../../middlewear/multer.js";
 import {
   createTechnician,
+  loginTechnician,
   getAllTechnicians,
   getTechnicianById,
   updateTechnician,
@@ -10,6 +11,9 @@ import {
 } from "./technician.controller.js";
 
 const router = express.Router();
+
+router.post("/auth/signup", upload.single("image"), createTechnician);
+router.post("/auth/signin", loginTechnician);
 
 router.post("/", upload.single("image"), createTechnician);
 router.get("/", getAllTechnicians);

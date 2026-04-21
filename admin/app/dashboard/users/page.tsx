@@ -1,7 +1,17 @@
+"use client";
+import { Filter } from "@/app/Components/dashboard/filter/filter";
+import { UserTable } from "@/app/Components/dashboard/usertable/usertable";
+
 export default function Users() {
   return (
-    <div>
-      <h1>Users</h1>
+    <div className="flex flex-col w-full">
+      <div className="flex items-center justify-between mt-6 mb-8">
+        <h1 className="text-4xl font-extrabold text-[#110D8C] tracking-tight">
+          Users
+        </h1>
+        <Filter />
+      </div>
+      <UserTable />
     </div>
   );
 }

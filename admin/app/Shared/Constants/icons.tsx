@@ -17,6 +17,13 @@ import {
   Phone,
   Drill,
   ReceiptText,
+  Funnel,
+  SquareArrowRightExit,
+  ChevronsUpDown,
+  ChevronRight,
+  ChevronLeft,
+  Ellipsis,
+  X,
 } from "lucide-react";
 
 export const ICONS = {
@@ -38,4 +45,11 @@ export const ICONS = {
   phone: Phone,
   drill: Drill,
   receipt: ReceiptText,
+  filter: Funnel,
+  export: SquareArrowRightExit,
+  expand_all: ChevronsUpDown,
+  right: ChevronRight,
+  left: ChevronLeft,
+  ellipsis: Ellipsis,
+  close: X,
 };

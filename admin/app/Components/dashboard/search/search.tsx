@@ -1,3 +1,4 @@
+"use client";
 import { ICONS } from "@/app/Shared/Constants/icons";
 import { useState } from "react";
 
