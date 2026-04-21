@@ -37,8 +37,10 @@ app.use("/api/chats", chatRoutes);
 app.use("/api/service-request", serviceRequestRoutes);
 app.use("/api/review", reviewRoutes);
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server is running on port ${process.env.PORT}`);
+const port = Number(process.env.PORT) || 4000;
+const host = process.env.HOST || "0.0.0.0";
+app.listen(port, host, () => {
+  console.log(`Server is running on http://${host}:${port}`);
 });
 
 // 404 handler
