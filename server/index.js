@@ -9,6 +9,7 @@ import technicianRoutes from "./modules/technician/technician.route.js";
 import chatRoutes from "./modules/chat/chat.route.js";
 import serviceRequestRoutes from "./modules/service_request/service_request.route.js";
 import reviewRoutes from "./modules/review/review.route.js";
+import activityLogRoutes from "./modules/activity_log/activity_log.route.js";
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use("/api/technicians", technicianRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/service-request", serviceRequestRoutes);
 app.use("/api/review", reviewRoutes);
+app.use("/api/activity-log", activityLogRoutes);
 
 const port = Number(process.env.PORT) || 4000;
 const host = process.env.HOST || "0.0.0.0";
