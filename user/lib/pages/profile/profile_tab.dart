@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:user/api/auth_storage.dart';
+import 'package:user/auth/login/login.dart';
 import 'package:user/pages/profile/widgets/profile_logout_card.dart';
 import 'package:user/pages/profile/widgets/profile_menu_card.dart';
 import 'package:user/pages/shared/app_colors.dart';
@@ -147,8 +149,13 @@ class ProfileTab extends StatelessWidget {
                   Divider(height: 1, thickness: 1, color: Colors.grey.shade300),
                   const SizedBox(height: 24),
                   ProfileLogoutCard(
-                    onTap: () {
-                      // TODO: Logout
+                    onTap: () async {
+                      await AuthStorage.clearToken();
+                      if (!context.mounted) return;
+                      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                        MaterialPageRoute<void>(builder: (_) => const AuthLoginScreen()),
+                        (route) => false,
+                      );
                     },
                   ),
                 ],

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:user/api/api_config.dart';
+import 'package:user/api/auth_api.dart';
+import 'package:user/api/auth_storage.dart';
+import 'package:user/pages/shell/home_page.dart';
 
 /// Registration screen: navy hero + overlapping light panel with a large top-right radius.
 class AuthRegisterScreen extends StatefulWidget {
@@ -17,6 +21,9 @@ class _AuthRegisterScreenState extends State<AuthRegisterScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -152,9 +159,26 @@ class _AuthRegisterScreenState extends State<AuthRegisterScreen> {
                       _pillField(
                         controller: _passwordController,
                         hintText: 'Enter your password',
-                        obscureText: true,
+                        obscureText: _obscurePassword,
+                        suffixIcon: IconButton(
+                          onPressed: () =>
+                              setState(() => _obscurePassword = !_obscurePassword),
+                          tooltip:
+                              _obscurePassword ? 'Show password' : 'Hide password',
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            color: _mutedGray,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Use 8+ chars with at least one uppercase and one special character.',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600, height: 1.3),
+                      ),
+                      const SizedBox(height: 20),
                       DecoratedBox(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(999),
@@ -170,9 +194,7 @@ class _AuthRegisterScreenState extends State<AuthRegisterScreen> {
                           width: double.infinity,
                           height: 52,
                           child: FilledButton(
-                            onPressed: () {
-                              // TODO: Register
-                            },
+                            onPressed: _isLoading ? null : _onRegister,
                             style: FilledButton.styleFrom(
                               backgroundColor: _primaryNavy,
                               foregroundColor: Colors.white,
@@ -184,7 +206,16 @@ class _AuthRegisterScreenState extends State<AuthRegisterScreen> {
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            child: const Text('Create an Account'),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text('Create an Account'),
                           ),
                         ),
                       ),
@@ -225,11 +256,50 @@ class _AuthRegisterScreenState extends State<AuthRegisterScreen> {
     );
   }
 
+  Future<void> _onRegister() async {
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (name.isEmpty || phone.isEmpty || email.isEmpty || password.isEmpty) {
+      _toast('Please fill in all fields');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await AuthApi.signup(name: name, email: email, password: password, phone: phone);
+      final token = await AuthApi.signin(email: email, password: password);
+      await AuthStorage.saveToken(token);
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const HomePage()),
+        (route) => false,
+      );
+    } on AuthApiException catch (e) {
+      _toast(e.message);
+    } catch (e, st) {
+      debugPrint('Register network error: $e\n$st');
+      _toast(
+        'Cannot reach ${ApiConfig.baseUrl}. On a real phone use your PC LAN IP, e.g.:\n'
+        'flutter run --dart-define=API_DEV_HOST=192.168.x.x',
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _toast(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Widget _pillField({
     required TextEditingController controller,
     required String hintText,
     TextInputType? keyboardType,
     bool obscureText = false,
+    Widget? suffixIcon,
   }) {
     return Material(
       color: Colors.white,
@@ -251,8 +321,14 @@ class _AuthRegisterScreenState extends State<AuthRegisterScreen> {
           isDense: true,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          suffixIcon: suffixIcon,
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 44,
+            minHeight: 44,
+          ),
         ),
       ),
     );
   }
 }
+

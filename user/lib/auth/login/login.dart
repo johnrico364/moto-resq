@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:user/api/api_config.dart';
+import 'package:user/api/auth_api.dart';
+import 'package:user/api/auth_storage.dart';
 import 'package:user/auth/register/register.dart';
 import 'package:user/pages/shell/home_page.dart';
 
@@ -18,6 +21,9 @@ class _AuthLoginScreenState extends State<AuthLoginScreen> {
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -121,7 +127,19 @@ class _AuthLoginScreenState extends State<AuthLoginScreen> {
                       _pillField(
                         controller: _passwordController,
                         hintText: 'Enter your password',
-                        obscureText: true,
+                        obscureText: _obscurePassword,
+                        suffixIcon: IconButton(
+                          onPressed: () =>
+                              setState(() => _obscurePassword = !_obscurePassword),
+                          tooltip:
+                              _obscurePassword ? 'Show password' : 'Hide password',
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            color: _mutedGray,
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 10),
                       Align(
@@ -159,14 +177,7 @@ class _AuthLoginScreenState extends State<AuthLoginScreen> {
                           width: double.infinity,
                           height: 52,
                           child: FilledButton(
-                            onPressed: () {
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute<void>(
-                                  builder: (context) => const HomePage(),
-                                ),
-                                (route) => false,
-                              );
-                            },
+                            onPressed: _isLoading ? null : _onLogin,
                             style: FilledButton.styleFrom(
                               backgroundColor: _primaryNavy,
                               foregroundColor: Colors.white,
@@ -178,7 +189,16 @@ class _AuthLoginScreenState extends State<AuthLoginScreen> {
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            child: const Text('Login'),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text('Login'),
                           ),
                         ),
                       ),
@@ -271,11 +291,47 @@ class _AuthLoginScreenState extends State<AuthLoginScreen> {
     );
   }
 
+  Future<void> _onLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      _toast('Please enter email and password');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final token = await AuthApi.signin(email: email, password: password);
+      await AuthStorage.saveToken(token);
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const HomePage()),
+        (route) => false,
+      );
+    } on AuthApiException catch (e) {
+      _toast(e.message);
+    } catch (e, st) {
+      debugPrint('Login network error: $e\n$st');
+      _toast(
+        'Cannot reach ${ApiConfig.baseUrl}. On a real phone use your PC LAN IP, e.g.:\n'
+        'flutter run --dart-define=API_DEV_HOST=192.168.x.x',
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _toast(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Widget _pillField({
     required TextEditingController controller,
     required String hintText,
     TextInputType? keyboardType,
     bool obscureText = false,
+    Widget? suffixIcon,
   }) {
     return Material(
       color: Colors.white,
@@ -297,6 +353,11 @@ class _AuthLoginScreenState extends State<AuthLoginScreen> {
           isDense: true,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          suffixIcon: suffixIcon,
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 44,
+            minHeight: 44,
+          ),
         ),
       ),
     );
@@ -402,3 +463,4 @@ class _GoogleMarkPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
