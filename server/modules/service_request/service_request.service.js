@@ -2,6 +2,8 @@ import path from "path";
 import fs from "fs/promises";
 
 import ServiceRequest from "./service_request.model.js"; // MODEL
+import User from "../user/user.model.js";
+import Technician from "../technician/technician.model.js";
 
 export const ServiceRequestService = {
   // CREATE SERVICE REQUEST ================================================
@@ -20,6 +22,27 @@ export const ServiceRequestService = {
   async getServiceRequestById(id) {
     const serviceRequest = await ServiceRequest.findById(id);
     return serviceRequest;
+  },
+  // GET DASHBOARD COUNTS ===============================================
+  async getDashboardCounts() {
+    const [
+      completedServices,
+      registeredTechnicians,
+      serviceRequests,
+      registeredUsers,
+    ] = await Promise.all([
+      ServiceRequest.countDocuments({ status: "Completed" }),
+      Technician.countDocuments({ is_deleted: { $ne: true } }),
+      ServiceRequest.countDocuments(),
+      User.countDocuments(),
+    ]);
+
+    return {
+      completed_services: completedServices,
+      registered_technician: registeredTechnicians,
+      service_request: serviceRequests,
+      registered_users: registeredUsers,
+    };
   },
   // UPDATE SERVICE REQUEST ====================================
   async updateServiceRequest(id, data) {

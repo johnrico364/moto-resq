@@ -3,6 +3,7 @@ import upload from "../../middlewear/multer.js";
 import {
   createServiceRequest,
   getAllServiceRequest,
+  getDashboardCounts,
   getServiceRequestById,
   updateServiceRequest,
   deleteServiceRequest,
@@ -12,6 +13,7 @@ const router = express.Router();
 
 router.post("/", upload.single("image"), createServiceRequest);
 router.get("/", getAllServiceRequest);
+router.get("/counts/summary", getDashboardCounts);
 router.get("/:id", getServiceRequestById);
 router.patch("/:id", upload.single("image"), updateServiceRequest);
 router.delete("/:id", deleteServiceRequest);
