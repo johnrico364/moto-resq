@@ -15,12 +15,16 @@ export const ServiceRequestService = {
   },
   // GET ALL SERVICE REQUEST ==============================================
   async getAllServiceRequest() {
-    const serviceRequest = await ServiceRequest.find();
+    const serviceRequest = await ServiceRequest.find()
+      .populate("user_id")
+      .populate("technician_id");
     return serviceRequest;
   },
   // GET SERVICE REQUEST BY ID ===========================================
   async getServiceRequestById(id) {
-    const serviceRequest = await ServiceRequest.findById(id);
+    const serviceRequest = await ServiceRequest.findById(id)
+      .populate("user_id")
+      .populate("technician_id");
     return serviceRequest;
   },
   // GET DASHBOARD COUNTS ===============================================
