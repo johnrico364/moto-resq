@@ -47,6 +47,15 @@ export const getServiceRequestById = async (req, res) => {
   }
 };
 
+export const getDashboardCounts = async (req, res) => {
+  try {
+    const counts = await ServiceRequestService.getDashboardCounts();
+    res.status(200).json({ success: true, data: counts });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 export const updateServiceRequest = async (req, res) => {
   try {
     const requestId = req.params.id;
