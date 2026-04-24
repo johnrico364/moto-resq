@@ -38,10 +38,15 @@ export const ServiceRequestService = {
       ServiceRequest.countDocuments({ status: "Completed" }),
       Technician.countDocuments({ is_deleted: { $ne: true } }),
       ServiceRequest.countDocuments(),
-      User.countDocuments(),
+      User.countDocuments({ role: "user" }),
     ]);
 
     return {
+      completedServices,
+      registeredTechnicians,
+      serviceRequests,
+      registeredUsers,
+      // Backward-compatible keys for existing clients
       completed_services: completedServices,
       registered_technician: registeredTechnicians,
       service_request: serviceRequests,
