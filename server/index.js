@@ -101,9 +101,11 @@ wss.on("connection", (socket, req) => {
   });
 });
 
-server.listen(port, host, () => {
-  console.log(`Server is running on http://${host}:${port}`);
-});
+if (!process.env.VERCEL) {
+  server.listen(port, host, () => {
+    console.log(`Server is running on http://${host}:${port}`);
+  });
+}
 
 // 404 handler
 app.use((req, res) => {
@@ -117,14 +119,5 @@ app.use((err, req, res, next) => {
     .status(500)
     .json({ error: "Internal server error", message: err.message });
 });
-
-const port = Number(process.env.PORT) || 4000;
-const host = process.env.HOST || "0.0.0.0";
-
-if (!process.env.VERCEL) {
-  app.listen(port, host, () => {
-    console.log(`Server is running on http://${host}:${port}`);
-  });
-}
 
 export default app;
