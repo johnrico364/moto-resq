@@ -4,37 +4,39 @@ import { Filter } from "@/app/Components/dashboard/filter/filter";
 import { UserTable } from "@/app/Components/dashboard/usertable/usertable";
 import { useUser } from "@/app/Services/User/useUser";
 
-const DEFAULT_LIMIT = 10;
+const LIMIT_OPTIONS = [10, 15, 20] as const;
+type LimitOption = (typeof LIMIT_OPTIONS)[number];
+type StatusFilter = "all" | "active" | "inactive" | "suspended";
 
 export default function Users() {
   const { users, isLoading, error } = useUser();
-  const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "inactive" | "suspended">("all");
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
   const [searchText, setSearchText] = useState("");
-  const [selectedLimit, setSelectedLimit] = useState(DEFAULT_LIMIT);
+  const [selectedLimit, setSelectedLimit] = useState<LimitOption>(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredUsers = useMemo(() => {
-    const normalizedSearch = searchText.trim().toLowerCase();
-
-    const statusFiltered = selectedStatus === "all"
+  const statusFiltered = useMemo(() => {
+    return selectedStatus === "all"
       ? users
       : users.filter((user) => user.status === selectedStatus);
+  }, [selectedStatus, users]);
 
-    const searchedUsers = normalizedSearch
-      ? statusFiltered.filter((user) =>
-          user.name.toLowerCase().includes(normalizedSearch) ||
-          user.email.toLowerCase().includes(normalizedSearch) ||
-          user.phone.toLowerCase().includes(normalizedSearch),
-        )
-      : statusFiltered;
+  const filteredUsers = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+    if (!query) return statusFiltered;
+    return statusFiltered.filter((user) =>
+      user.name.toLowerCase().includes(query),
+    );
+  }, [searchText, statusFiltered]);
 
-    return searchedUsers;
-  }, [searchText, selectedStatus, users]);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredUsers.length / selectedLimit),
+  );
 
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / selectedLimit));
   const paginatedUsers = useMemo(() => {
-    const startIndex = (currentPage - 1) * selectedLimit;
-    return filteredUsers.slice(startIndex, startIndex + selectedLimit);
+    const start = (currentPage - 1) * selectedLimit;
+    return filteredUsers.slice(start, start + selectedLimit);
   }, [currentPage, filteredUsers, selectedLimit]);
 
   useEffect(() => {
@@ -55,16 +57,16 @@ export default function Users() {
         </h1>
         <Filter
           selectedLimit={selectedLimit}
-          onLimitChange={setSelectedLimit}
+          onLimitChange={(val) => setSelectedLimit(val as LimitOption)}
           selectedStatus={selectedStatus}
           onStatusChange={setSelectedStatus}
           searchText={searchText}
           onSearchChange={setSearchText}
         />
       </div>
-      {error && (
-        <p className="mb-4 text-sm text-red-500">{error}</p>
-      )}
+
+      {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+
       {isLoading ? (
         <div className="bg-white rounded-2xl shadow-sm px-6 py-8 text-gray-500">
           Loading users...
