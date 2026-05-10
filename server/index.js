@@ -1,6 +1,8 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import mongoose from "mongoose";
 
 // Import routes
@@ -14,19 +16,47 @@ import activityLogRoutes from "./modules/activity_log/activity_log.route.js";
 const app = express();
 
 app.use(cors());
-dotenv.config();
 app.use(express.json());
 
-const _dbURI = process.env.MONGO_DB_URI;
+// Cache the Mongoose connection across serverless invocations so cold starts
+// don't open a new socket per request and so warm invocations skip the connect.
+let cached = global._mongoose;
+if (!cached) cached = global._mongoose = { conn: null, promise: null };
 
-mongoose
-  .connect(_dbURI)
-  .then(() => {
-    console.log("Connected to MongoDB");
-  })
-  .catch((err) => {
-    console.log(err);
-  });
+async function connectDB() {
+  if (cached.conn) return cached.conn;
+  if (!cached.promise) {
+    const uri = process.env.MONGO_DB_URI;
+    if (!uri) {
+      throw new Error("MONGO_DB_URI is not set");
+    }
+    cached.promise = mongoose
+      .connect(uri, { bufferCommands: false })
+      .then((m) => {
+        console.log("Connected to MongoDB");
+        return m;
+      });
+  }
+  try {
+    cached.conn = await cached.promise;
+  } catch (err) {
+    cached.promise = null;
+    throw err;
+  }
+  return cached.conn;
+}
+
+// Ensure the DB is connected before any route handler runs. Without this,
+// Mongoose buffers the operation while the connection is still pending and
+// throws "Operation buffering timed out after 10000ms" on Vercel cold starts.
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Image static folder
 app.use("/images", express.static("images"));
@@ -38,12 +68,6 @@ app.use("/api/chats", chatRoutes);
 app.use("/api/service-request", serviceRequestRoutes);
 app.use("/api/review", reviewRoutes);
 app.use("/api/activity-log", activityLogRoutes);
-
-const port = Number(process.env.PORT) || 4000;
-const host = process.env.HOST || "0.0.0.0";
-app.listen(port, host, () => {
-  console.log(`Server is running on http://${host}:${port}`);
-});
 
 // 404 handler
 app.use((req, res) => {
@@ -57,3 +81,14 @@ app.use((err, req, res, next) => {
     .status(500)
     .json({ error: "Internal server error", message: err.message });
 });
+
+const port = Number(process.env.PORT) || 4000;
+const host = process.env.HOST || "0.0.0.0";
+
+if (!process.env.VERCEL) {
+  app.listen(port, host, () => {
+    console.log(`Server is running on http://${host}:${port}`);
+  });
+}
+
+export default app;

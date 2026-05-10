@@ -28,12 +28,31 @@ const fileFilter = (req, file, callback) => {
   }
 };
 
-const upload = multer({
+const realUpload = multer({
   storage,
   limits: {
-    fileSize: 5* 1024 * 1024, // Limit 5 MB
+    fileSize: 5 * 1024 * 1024, // Limit 5 MB
   },
   fileFilter,
 });
+
+// Vercel serverless functions run on a read-only/ephemeral filesystem, so
+// multer.diskStorage cannot persist files there. Instead of letting requests
+// crash mid-upload, return a clear 503 from any upload route in that env.
+const blocked = (_req, res) =>
+  res.status(503).json({
+    error:
+      "File uploads are disabled in this deployment. Configure cloud storage (Cloudinary/S3/Vercel Blob) to enable.",
+  });
+
+const upload = process.env.VERCEL
+  ? {
+      single: () => blocked,
+      array: () => blocked,
+      fields: () => blocked,
+      none: () => blocked,
+      any: () => blocked,
+    }
+  : realUpload;
 
 export default upload;
