@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 import User from "./user.model.js";
+import { UPLOAD_ROOT } from "../../config/uploadRoot.js";
 
 function getJwtExpiresIn() {
   const raw = process.env.JWT_EXPIRES;
@@ -40,7 +41,7 @@ async function deleteUserImageIfExists(imgPath) {
 export const UserService = {
   // SIGN UP USER ====================================
   async signupUser(data, userImage) {
-    const img_path = userImage ? path.join("images", "user", userImage) : null;
+    const img_path = userImage ? path.join(UPLOAD_ROOT, "user", userImage) : null;
 
     // Validations
     if (!data?.email || !validator.isEmail(data.email)) {
@@ -155,7 +156,7 @@ export const UserService = {
       data.profile_image !== oldImage &&
       oldImage !== "default.png"
     ) {
-      const imgPath = path.join("images", "user", oldImage);
+      const imgPath = path.join(UPLOAD_ROOT, "user", oldImage);
       fs.unlink(imgPath, (err) => {
         if (err) {
           console.error(`Error deleting old user image: ${err}`);

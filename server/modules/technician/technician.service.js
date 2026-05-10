@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 import Technician from "./technician.model.js";
+import { UPLOAD_ROOT } from "../../config/uploadRoot.js";
 
 function resolveJwtExpiresIn() {
   const raw = process.env.JWT_EXPIRES?.trim();
@@ -28,7 +29,7 @@ export const TechnicianService = {
   // CREATE TECHNICIAN =========================================
   async createTechnician(data, profileImage) {
     const img_path = profileImage
-      ? path.join("images", "technician", profileImage)
+      ? path.join(UPLOAD_ROOT, "technician", profileImage)
       : null;
 
     const normalizedPhone = data?.phone?.toString().trim();
@@ -137,7 +138,7 @@ export const TechnicianService = {
 
     if (data?.email !== undefined) {
       if (!validator.isEmail(data.email)) {
-        if (profileImage) await deleteTechnicianImageIfExists(path.join("images", "technician", profileImage));
+        if (profileImage) await deleteTechnicianImageIfExists(path.join(UPLOAD_ROOT, "technician", profileImage));
         throw new Error("Invalid email format");
       }
       const existing = await Technician.findOne({
@@ -145,7 +146,7 @@ export const TechnicianService = {
         _id: { $ne: id },
       });
       if (existing) {
-        if (profileImage) await deleteTechnicianImageIfExists(path.join("images", "technician", profileImage));
+        if (profileImage) await deleteTechnicianImageIfExists(path.join(UPLOAD_ROOT, "technician", profileImage));
         throw new Error("Email already registered");
       }
       updateFields.email = data.email.toLowerCase();
@@ -153,7 +154,7 @@ export const TechnicianService = {
 
     if (data?.password) {
       if (!validator.isStrongPassword(data.password)) {
-        if (profileImage) await deleteTechnicianImageIfExists(path.join("images", "technician", profileImage));
+        if (profileImage) await deleteTechnicianImageIfExists(path.join(UPLOAD_ROOT, "technician", profileImage));
         throw new Error(
           "Password must contain one capital letter and one special character",
         );
@@ -165,7 +166,7 @@ export const TechnicianService = {
     if (profileImage) {
       const oldImg = technician.profile_image;
       if (oldImg && oldImg !== "default.png") {
-        const oldPath = path.join("images", "technician", oldImg);
+        const oldPath = path.join(UPLOAD_ROOT, "technician", oldImg);
         await deleteTechnicianImageIfExists(oldPath);
       }
       updateFields.profile_image = profileImage;

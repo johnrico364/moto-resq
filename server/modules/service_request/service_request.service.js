@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import ServiceRequest from "./service_request.model.js"; // MODEL
 import User from "../user/user.model.js";
 import Technician from "../technician/technician.model.js";
+import { UPLOAD_ROOT } from "../../config/uploadRoot.js";
 
 export const ServiceRequestService = {
   // CREATE SERVICE REQUEST ================================================
@@ -60,7 +61,7 @@ export const ServiceRequestService = {
 
     // If a new image is being set and it's different from the old one, remove the old image (unless it's default.png)
     if (data?.image && oldImage && data.image !== oldImage) {
-      const imgPath = path.join("images", "service_request", oldImage);
+      const imgPath = path.join(UPLOAD_ROOT, "service_request", oldImage);
       console.log(imgPath);
       fs.unlink(imgPath, (err) => {
         if (err) {

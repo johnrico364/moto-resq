@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+import { UPLOAD_ROOT } from "./config/uploadRoot.js";
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
@@ -61,7 +62,7 @@ app.use(async (req, res, next) => {
 });
 
 // Image static folder
-app.use("/images", express.static("images"));
+app.use("/images", express.static(UPLOAD_ROOT));
 
 // API ROUTES
 app.use("/api/users", userRoutes);
