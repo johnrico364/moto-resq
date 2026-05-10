@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+
+import 'package:technicians/api/auth_storage.dart';
+import 'package:technicians/api/service_request_api.dart';
 import 'package:technicians/navbar/navbar.dart';
 
 class HomePage extends StatefulWidget {
@@ -10,6 +14,27 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+  String? _technicianId;
+  bool _loadingRequests = true;
+  List<ServiceRequestItem> _pendingRequests = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    final token = await AuthStorage.readToken();
+    final techId = _extractTechnicianId(token);
+    final pending = await ServiceRequestApi.getPendingRequests();
+    if (!mounted) return;
+    setState(() {
+      _technicianId = techId;
+      _pendingRequests = pending;
+      _loadingRequests = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +280,9 @@ class _HomePageState extends State<HomePage> {
                                     ),
                                     SizedBox(height: 8),
                                     Text(
-                                      '10 request waiting',
+                                      _loadingRequests
+                                          ? 'Loading requests...'
+                                          : '${_pendingRequests.length} request waiting',
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: Colors.grey[600],
@@ -284,7 +311,7 @@ class _HomePageState extends State<HomePage> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: () {},
+                              onPressed: _openPendingBottomSheet,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color(0xFF2E9FFF),
                                 foregroundColor: Colors.white,
@@ -399,5 +426,130 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
+  }
+
+  Future<void> _openPendingBottomSheet() async {
+    if (_loadingRequests) return;
+    if (_pendingRequests.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No pending requests right now')),
+      );
+      return;
+    }
+    final technicianId = _technicianId;
+    if (technicianId == null || technicianId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Technician ID missing. Re-login and try again.')),
+      );
+      return;
+    }
+
+    var workingRequestId = '';
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Pending Requests',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 12),
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: _pendingRequests.length,
+                        separatorBuilder: (_, index) => const SizedBox(height: 10),
+                        itemBuilder: (_, i) {
+                          final item = _pendingRequests[i];
+                          final loading = workingRequestId == item.id;
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Problem: ${item.problemType}',
+                                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                                const SizedBox(height: 4),
+                                Text('User: ${item.userId}'),
+                                Text('Vehicle: ${item.vehicleId}'),
+                                Text('Location: ${item.lat.toStringAsFixed(5)}, ${item.lng.toStringAsFixed(5)}'),
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: FilledButton(
+                                    onPressed: loading
+                                        ? null
+                                        : () async {
+                                            setSheetState(() => workingRequestId = item.id);
+                                            final ok = await ServiceRequestApi.acceptRequest(
+                                              requestId: item.id,
+                                              technicianId: technicianId,
+                                            );
+                                            if (!mounted) return;
+                                            if (ok) {
+                                              Navigator.of(this.context).pop();
+                                              _bootstrap();
+                                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                                const SnackBar(content: Text('Request accepted')),
+                                              );
+                                            } else {
+                                              setSheetState(() => workingRequestId = '');
+                                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                                const SnackBar(content: Text('Failed to accept request')),
+                                              );
+                                            }
+                                          },
+                                    child: loading
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          )
+                                        : const Text('Accept'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  static String? _extractTechnicianId(String? token) {
+    if (token == null || token.isEmpty) return null;
+    try {
+      final parts = token.split('.');
+      if (parts.length < 2) return null;
+      final normalized = base64Url.normalize(parts[1]);
+      final payload = jsonDecode(utf8.decode(base64Url.decode(normalized)));
+      if (payload is Map<String, dynamic>) return payload['technicianId']?.toString();
+      if (payload is Map) return payload['technicianId']?.toString();
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 }

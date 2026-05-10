@@ -1,7 +1,15 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
+import 'package:user/api/api_config.dart';
+import 'package:user/api/auth_storage.dart';
 import 'package:user/pages/shared/app_colors.dart';
 
-/// Full-screen "Request Help" form (roadside assistance).
 class RequestHelpPage extends StatefulWidget {
   const RequestHelpPage({super.key});
 
@@ -10,422 +18,419 @@ class RequestHelpPage extends StatefulWidget {
 }
 
 class _RequestHelpPageState extends State<RequestHelpPage> {
-  static const List<String> _issueTypes = [
+  static const List<String> _problemTypes = <String>[
     'Flat Tire',
-    'Battery issue',
-    'Engine problem',
+    'Battery',
+    'Engine',
+    'Electrical',
     'Towing',
+    'Brakes',
     'Other',
   ];
 
-  static const List<String> _vehicles = [
-    'Toyota Vios',
-    'SUV',
-    'Motorcycle',
-    'Other vehicle',
-  ];
-
-  String _issueType = 'Flat Tire';
-  String _vehicle = 'Toyota Vios';
-  final TextEditingController _descriptionController = TextEditingController();
+  String _problemType = 'Battery';
+  bool _loadingLocation = true;
+  bool _submitting = false;
+  String? _error;
+  LatLng? _currentLatLng;
+  String? _userId;
+  String? _vehicleId;
 
   @override
-  void dispose() {
-    _descriptionController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _bootstrap();
   }
 
-  Future<void> _pickIssue() async {
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: Text(
-                'Type of issue',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
-            ),
-            for (final t in _issueTypes)
-              ListTile(
-                title: Text(t),
-                trailing: t == _issueType ? const Icon(Icons.check_rounded) : null,
-                onTap: () => Navigator.pop(context, t),
-              ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-    if (choice != null && mounted) setState(() => _issueType = choice);
+  Future<void> _bootstrap() async {
+    await Future.wait(<Future<void>>[
+      _resolveUserAndVehicle(),
+      _resolveCurrentLocation(),
+    ]);
   }
 
-  Future<void> _pickVehicle() async {
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: Text(
-                'Choose vehicle',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
-            ),
-            for (final v in _vehicles)
-              ListTile(
-                title: Text(v),
-                trailing: v == _vehicle ? const Icon(Icons.check_rounded) : null,
-                onTap: () => Navigator.pop(context, v),
-              ),
-            const SizedBox(height: 8),
-          ],
+  Future<void> _resolveUserAndVehicle() async {
+    try {
+      final token = await AuthStorage.readToken();
+      if (token == null || token.isEmpty) {
+        throw Exception('No auth token. Please login again.');
+      }
+
+      final userId = _extractUserIdFromJwt(token);
+      if (userId == null || userId.isEmpty) {
+        throw Exception('Unable to identify user from token.');
+      }
+
+      final response = await http
+          .get(ApiConfig.httpUri('/api/users/$userId/vehicles'))
+          .timeout(const Duration(seconds: 20));
+      final body = _decodeJson(response.body);
+      if (response.statusCode != 200 || body['success'] != true) {
+        throw Exception(
+          body['message']?.toString() ?? 'Failed to load vehicles',
+        );
+      }
+
+      final list = body['data'];
+      if (list is! List || list.isEmpty) {
+        throw Exception('No vehicle found. Please add a vehicle first.');
+      }
+
+      final first = list.first;
+      final map = first is Map
+          ? Map<String, dynamic>.from(first)
+          : <String, dynamic>{};
+      final vehicleId = map['_id']?.toString();
+      if (vehicleId == null || vehicleId.isEmpty) {
+        throw Exception('Vehicle id missing in response.');
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _userId = userId;
+        _vehicleId = vehicleId;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    }
+  }
+
+  Future<void> _resolveCurrentLocation() async {
+    try {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (!enabled) {
+        throw Exception('Location service is turned off.');
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        throw Exception('Location permission is not granted.');
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
         ),
-      ),
-    );
-    if (choice != null && mounted) setState(() => _vehicle = choice);
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _currentLatLng = LatLng(pos.latitude, pos.longitude);
+        _loadingLocation = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadingLocation = false;
+        _error = (_error == null) ? e.toString() : '$_error\n$e';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
+    final canSubmit =
+        !_submitting &&
+        !_loadingLocation &&
+        _currentLatLng != null &&
+        _userId != null &&
+        _vehicleId != null;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      appBar: AppBar(title: const Text('Request Help')),
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, bottom + 16),
         children: [
-          SafeArea(
-            bottom: false,
-            child: SizedBox(
-              height: 48,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  onPressed: () => Navigator.maybePop(context),
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
-                  color: const Color(0xFF1A1A1A),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              physics: const BouncingScrollPhysics(),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SelectionRow(
-                    label: 'Type of issue',
-                    value: _issueType,
-                    onTap: _pickIssue,
-                  ),
-                  _divider(),
-                  _SelectionRow(
-                    label: 'Choose Vehicle',
-                    value: _vehicle,
-                    onTap: _pickVehicle,
-                  ),
-                  _divider(),
-                  const SizedBox(height: 6),
                   const Text(
-                    'Upload images',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF131313),
-                    ),
+                    'Type of issue',
+                    style: TextStyle(fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(height: 12),
-                  Material(
-                    color: const Color(0xFFF0F0F2),
-                    borderRadius: BorderRadius.circular(12),
-                    child: InkWell(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Photo upload coming soon')),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: SizedBox(
-                        width: 88,
-                        height: 88,
-                        child: Icon(
-                          Icons.add_a_photo_rounded,
-                          size: 36,
-                          color: Colors.grey.shade800,
-                        ),
-                      ),
-                    ),
-                  ),
-                  _divider(),
-                  const SizedBox(height: 4),
-                  RichText(
-                    text: const TextSpan(
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF131313),
-                      ),
-                      children: [
-                        TextSpan(text: 'Description '),
-                        TextSpan(
-                          text: '(Optional)',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF8D8D96),
-                            fontSize: 14,
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    initialValue: _problemType,
+                    items: _problemTypes
+                        .map(
+                          (p) => DropdownMenuItem<String>(
+                            value: p,
+                            child: Text(p),
                           ),
-                        ),
-                      ],
-                    ),
+                        )
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) setState(() => _problemType = v);
+                    },
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _descriptionController,
-                    maxLines: 5,
-                    decoration: InputDecoration(
-                      hintText: 'Provide details of the issue',
-                      hintStyle: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFFF0F0F2),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.all(16),
-                    ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'user_id: ${_userId ?? 'loading...'}\nvehicle_id: ${_vehicleId ?? 'loading...'}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                   ),
-                  _divider(),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Location',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF131313),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const _FakeMapSnippet(),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, bottom + 16),
+          const SizedBox(height: 12),
+          Card(
+            clipBehavior: Clip.antiAlias,
             child: SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: FilledButton(
+              height: 260,
+              child: _loadingLocation
+                  ? const Center(child: CircularProgressIndicator())
+                  : _currentLatLng == null
+                  ? Center(
+                      child: Text(_error ?? 'Unable to get current location.'),
+                    )
+                  : FlutterMap(
+                      options: MapOptions(
+                        initialCenter: _currentLatLng!,
+                        initialZoom: 15,
+                        interactionOptions: const InteractionOptions(
+                          flags:
+                              InteractiveFlag.drag | InteractiveFlag.pinchZoom,
+                        ),
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.motoresq.user',
+                        ),
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: _currentLatLng!,
+                              width: 50,
+                              height: 50,
+                              child: const Icon(
+                                Icons.location_pin,
+                                size: 44,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            Text(_error!, style: const TextStyle(color: Colors.red)),
+          ],
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 52,
+            child: FilledButton(
+              onPressed: canSubmit ? _submitRequest : null,
+              style: FilledButton.styleFrom(backgroundColor: AppColors.navy),
+              child: _submitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Help'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitRequest() async {
+    final latLng = _currentLatLng;
+    final userId = _userId;
+    final vehicleId = _vehicleId;
+    if (latLng == null || userId == null || vehicleId == null) return;
+
+    setState(() => _submitting = true);
+    try {
+      final payload = <String, dynamic>{
+        'user_id': userId,
+        'vehicle_id': vehicleId,
+        'problem_type': _problemType,
+        'location': <String, num>{
+          'lat': latLng.latitude,
+          'lng': latLng.longitude,
+        },
+      };
+
+      final req = http.MultipartRequest(
+        'POST',
+        ApiConfig.httpUri('/api/service-request'),
+      );
+      req.fields['data'] = jsonEncode(payload);
+      final stream = await req.send().timeout(const Duration(seconds: 30));
+      final res = await http.Response.fromStream(stream);
+      final body = _decodeJson(res.body);
+      if (res.statusCode != 201 || body['success'] != true) {
+        throw Exception(
+          body['message']?.toString() ?? 'Failed to create request',
+        );
+      }
+
+      final created = body['data'] is Map
+          ? Map<String, dynamic>.from(body['data'] as Map)
+          : <String, dynamic>{};
+      final requestId = created['_id']?.toString();
+      if (requestId == null || requestId.isEmpty) {
+        throw Exception('Request id not returned by server.');
+      }
+
+      if (!mounted) return;
+      Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => _WaitingForTechnicianPage(requestId: requestId),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Request failed: $e')));
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  static String? _extractUserIdFromJwt(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length < 2) return null;
+      final normalized = base64Url.normalize(parts[1]);
+      final payload = jsonDecode(utf8.decode(base64Url.decode(normalized)));
+      if (payload is Map<String, dynamic>) return payload['userId']?.toString();
+      if (payload is Map) return payload['userId']?.toString();
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Map<String, dynamic> _decodeJson(String raw) {
+    if (raw.isEmpty) return {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    } catch (_) {}
+    return {};
+  }
+}
+
+class _WaitingForTechnicianPage extends StatefulWidget {
+  const _WaitingForTechnicianPage({required this.requestId});
+
+  final String requestId;
+
+  @override
+  State<_WaitingForTechnicianPage> createState() =>
+      _WaitingForTechnicianPageState();
+}
+
+class _WaitingForTechnicianPageState extends State<_WaitingForTechnicianPage> {
+  Timer? _timer;
+  String _status = 'Pending';
+  String? _technicianId;
+
+  @override
+  void initState() {
+    super.initState();
+    _poll();
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _poll());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _poll() async {
+    try {
+      final res = await http
+          .get(ApiConfig.httpUri('/api/service-request/${widget.requestId}'))
+          .timeout(const Duration(seconds: 15));
+      final body = _RequestHelpPageState._decodeJson(res.body);
+      if (res.statusCode != 200 || body['success'] != true) return;
+
+      final data = body['data'] is Map
+          ? Map<String, dynamic>.from(body['data'] as Map)
+          : <String, dynamic>{};
+      final status = data['status']?.toString() ?? 'Pending';
+      final technicianId = data['technician_id']?.toString();
+
+      if (!mounted) return;
+      setState(() {
+        _status = status;
+        _technicianId = technicianId;
+      });
+
+      if (technicianId != null &&
+          technicianId.isNotEmpty &&
+          status == 'Accepted') {
+        _timer?.cancel();
+        if (!mounted) return;
+        showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => AlertDialog(
+            title: const Text('Technician Accepted'),
+            content: Text('technician_id: $technicianId'),
+            actions: [
+              TextButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Help request sent (demo)')),
-                  );
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
                 },
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.navy,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                child: const Text('Request Help'),
+                child: const Text('OK'),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
+      }
+    } catch (_) {}
   }
-
-  Widget _divider() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 18),
-      child: Divider(height: 1, thickness: 1, color: Colors.grey.shade300),
-    );
-  }
-}
-
-class _SelectionRow extends StatelessWidget {
-  const _SelectionRow({
-    required this.label,
-    required this.value,
-    required this.onTap,
-  });
-
-  final String label;
-  final String value;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF333333),
+    return Scaffold(
+      appBar: AppBar(title: const Text('Finding Technician')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              const Text(
+                'Waiting for a technician to accept...',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const Spacer(),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF131313),
-              ),
-            ),
-            const SizedBox(width: 6),
-            Icon(Icons.chevron_right_rounded, color: Colors.grey.shade600),
-          ],
+              const SizedBox(height: 10),
+              Text('status: $_status'),
+              if (_technicianId != null) Text('technician_id: $_technicianId'),
+            ],
+          ),
         ),
       ),
     );
   }
-}
-
-class _FakeMapSnippet extends StatelessWidget {
-  const _FakeMapSnippet();
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: AspectRatio(
-        aspectRatio: 16 / 9,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFFE8E4DC),
-                    Colors.blue.shade100.withValues(alpha: 0.55),
-                    const Color(0xFFD4DFE8),
-                  ],
-                ),
-              ),
-            ),
-            CustomPaint(painter: _MapRoadPainter()),
-            Positioned(
-              left: 18,
-              top: 22,
-              child: _mapLabel('Westminster Abbey'),
-            ),
-            Positioned(
-              right: 28,
-              bottom: 48,
-              child: _mapLabel('Big Ben'),
-            ),
-            const Center(
-              child: _LocationDot(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static Widget _mapLabel(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(4),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF333333),
-        ),
-      ),
-    );
-  }
-}
-
-class _LocationDot extends StatelessWidget {
-  const _LocationDot();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 18,
-      height: 18,
-      decoration: BoxDecoration(
-        color: AppColors.accentBlue,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 3),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accentBlue.withValues(alpha: 0.45),
-            blurRadius: 8,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MapRoadPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final road = Paint()
-      ..color = Colors.white.withValues(alpha: 0.55)
-      ..strokeWidth = 5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawLine(Offset(0, size.height * 0.35), Offset(size.width * 0.95, size.height * 0.42), road);
-    canvas.drawLine(Offset(size.width * 0.45, 0), Offset(size.width * 0.38, size.height), road);
-
-    final minor = Paint()
-      ..color = Colors.white.withValues(alpha: 0.35)
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawLine(Offset(size.width * 0.2, size.height * 0.55), Offset(size.width * 0.9, size.height * 0.72), minor);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

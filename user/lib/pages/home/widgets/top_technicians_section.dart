@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:user/api/technician_api.dart';
 import 'package:user/pages/home/widgets/home_technician_card.dart';
 import 'package:user/pages/shared/app_colors.dart';
 
@@ -46,27 +47,49 @@ class TopTechniciansSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 18),
-        SizedBox(
-          height: 228,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            children: const [
-              HomeTechnicianCard(
-                name: 'Francis Ampoon',
-                service: 'Towing',
-                rating: '4.8',
-                imageSeed: 1,
+        FutureBuilder<List<TechnicianSummary>>(
+          future: TechnicianApi.getAll(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 228,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            if (snapshot.hasError) {
+              return const SizedBox(
+                height: 228,
+                child: Center(child: Text('Failed to load technicians')),
+              );
+            }
+
+            final data = snapshot.data ?? const <TechnicianSummary>[];
+            if (data.isEmpty) {
+              return const SizedBox(
+                height: 228,
+                child: Center(child: Text('No technicians found')),
+              );
+            }
+
+            return SizedBox(
+              height: 228,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
+                itemCount: data.length,
+                separatorBuilder: (_, index) => const SizedBox(width: 14),
+                itemBuilder: (context, index) {
+                  final tech = data[index];
+                  return HomeTechnicianCard(
+                    name: tech.name,
+                    service: tech.expertise,
+                    rating: tech.rating,
+                    imageSeed: index + 1,
+                  );
+                },
               ),
-              SizedBox(width: 14),
-              HomeTechnicianCard(
-                name: 'Maria Santos',
-                service: 'On-site repair',
-                rating: '4.9',
-                imageSeed: 2,
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );

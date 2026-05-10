@@ -1,14 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:user/api/vehicle_api.dart';
 import 'package:user/pages/home/widgets/home_vehicle_card.dart';
 import 'package:user/pages/shared/app_colors.dart';
 
-class CurvedHomeHeader extends StatelessWidget {
+class CurvedHomeHeader extends StatefulWidget {
   const CurvedHomeHeader({
     super.key,
     required this.accentBlue,
   });
 
   final Color accentBlue;
+
+  @override
+  State<CurvedHomeHeader> createState() => _CurvedHomeHeaderState();
+}
+
+class _CurvedHomeHeaderState extends State<CurvedHomeHeader> {
+  late Future<List<VehicleItem>> _futureVehicles;
+
+  @override
+  void initState() {
+    super.initState();
+    _futureVehicles = VehicleApi.getMyVehicles();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,18 +111,62 @@ class CurvedHomeHeader extends StatelessWidget {
                 clipBehavior: Clip.none,
                 physics: const BouncingScrollPhysics(),
                 children: [
-                  HomeVehicleCard(
-                    icon: Icons.directions_car_rounded,
-                    plate: 'ABC123',
-                    subtitle: 'Toyota, Vios',
-                    accentColor: accentBlue,
-                  ),
-                  const SizedBox(width: 14),
-                  const HomeVehicleCard(
-                    icon: Icons.two_wheeler_rounded,
-                    plate: 'DEF456',
-                    subtitle: 'Yamaha, Mio',
-                    accentColor: Color(0xFF3949AB),
+                  FutureBuilder<List<VehicleItem>>(
+                    future: _futureVehicles,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const SizedBox(
+                          height: 148,
+                          child: Center(
+                            child: CircularProgressIndicator(color: Colors.white),
+                          ),
+                        );
+                      }
+                      if (snapshot.hasError) {
+                        return const SizedBox(
+                          height: 148,
+                          child: Center(
+                            child: Text(
+                              'Failed to load vehicles',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        );
+                      }
+
+                      final vehicles = snapshot.data ?? const <VehicleItem>[];
+                      if (vehicles.isEmpty) {
+                        return const SizedBox(
+                          height: 148,
+                          child: Center(
+                            child: Text(
+                              'No vehicles yet. Add one in Profile > Your vehicles.',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        clipBehavior: Clip.none,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: vehicles.length,
+                        separatorBuilder: (_, index) => const SizedBox(width: 14),
+                        itemBuilder: (context, index) {
+                          final v = vehicles[index];
+                          final accent = index.isEven ? widget.accentBlue : const Color(0xFF3949AB);
+                          return HomeVehicleCard(
+                            icon: v.type == 'Car'
+                                ? Icons.directions_car_rounded
+                                : Icons.two_wheeler_rounded,
+                            plate: v.plateNumber,
+                            subtitle: '${v.brand}, ${v.model}',
+                            accentColor: accent,
+                          );
+                        },
+                      );
+                    },
                   ),
                 ],
               ),

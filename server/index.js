@@ -4,6 +4,8 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
+import { createServer } from "http";
+import { WebSocketServer } from "ws";
 
 // Import routes
 import userRoutes from "./modules/user/user.route.js";
@@ -68,6 +70,40 @@ app.use("/api/chats", chatRoutes);
 app.use("/api/service-request", serviceRequestRoutes);
 app.use("/api/review", reviewRoutes);
 app.use("/api/activity-log", activityLogRoutes);
+
+const port = Number(process.env.PORT) || 4000;
+const host = process.env.HOST || "0.0.0.0";
+const server = createServer(app);
+const wss = new WebSocketServer({ server });
+
+wss.on("connection", (socket, req) => {
+  const path = req.url || "/";
+  if (!path.startsWith("/ws/booking")) {
+    socket.close(1008, "Unsupported websocket path");
+    return;
+  }
+
+  socket.send(
+    JSON.stringify({
+      type: "connected",
+      path,
+      timestamp: new Date().toISOString(),
+    }),
+  );
+
+  socket.on("message", (raw) => {
+    // Broadcast incoming booking updates to all active subscribers.
+    for (const client of wss.clients) {
+      if (client.readyState === 1) {
+        client.send(raw.toString());
+      }
+    }
+  });
+});
+
+server.listen(port, host, () => {
+  console.log(`Server is running on http://${host}:${port}`);
+});
 
 // 404 handler
 app.use((req, res) => {

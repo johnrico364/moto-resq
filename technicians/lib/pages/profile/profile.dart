@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:technicians/api/auth_storage.dart';
+import 'package:technicians/auth/login/signin.dart';
 import 'package:technicians/navbar/navbar.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -131,6 +133,26 @@ class _ProfilePageState extends State<ProfilePage> {
                         label: 'Location',
                         value: 'Liloan Mandaue City',
                       ),
+                      SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _onLogout,
+                          icon: const Icon(Icons.logout_rounded),
+                          label: const Text(
+                            'Logout',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE53935),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size.fromHeight(46),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -201,6 +223,15 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _onLogout() async {
+    await AuthStorage.clearToken();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const SigninPage()),
+      (route) => false,
     );
   }
 }

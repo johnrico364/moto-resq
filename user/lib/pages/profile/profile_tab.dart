@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:user/api/auth_storage.dart';
 import 'package:user/auth/login/login.dart';
+import 'package:user/pages/profile/earnings/earnings_page.dart';
+import 'package:user/pages/profile/vehicles/vehicles_page.dart';
 import 'package:user/pages/profile/widgets/profile_logout_card.dart';
 import 'package:user/pages/profile/widgets/profile_menu_card.dart';
 import 'package:user/pages/shared/app_colors.dart';
@@ -126,7 +128,9 @@ class ProfileTab extends StatelessWidget {
                     icon: Icons.directions_car_outlined,
                     label: 'Your vehicles',
                     onTap: () {
-                      
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => const VehiclesPage()),
+                      );
                     },
                   ),
                   const SizedBox(height: 12),
@@ -140,9 +144,11 @@ class ProfileTab extends StatelessWidget {
                   const SizedBox(height: 12),
                   ProfileMenuCard(
                     icon: Icons.settings_outlined,
-                    label: 'Setting',
+                    label: 'Earnings',
                     onTap: () {
-                      
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => const EarningsPage()),
+                      );
                     },
                   ),
                   const SizedBox(height: 40),

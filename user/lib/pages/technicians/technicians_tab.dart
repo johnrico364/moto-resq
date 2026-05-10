@@ -1,47 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:user/api/technician_api.dart';
 import 'package:user/pages/shared/app_colors.dart';
 import 'package:user/pages/shared/capsule_search_bar.dart';
 import 'package:user/pages/shared/filter_square_button.dart';
 import 'package:user/pages/technicians/models/nearby_technician.dart';
 import 'package:user/pages/technicians/widgets/nearby_technician_tile.dart';
 
-class TechniciansTab extends StatelessWidget {
+class TechniciansTab extends StatefulWidget {
   const TechniciansTab({super.key});
 
-  static const List<NearbyTechnician> _sampleTechs = [
-    NearbyTechnician(
-      name: 'Kent John C. Flores',
-      distance: '57 km',
-      eta: '~5 min away',
-      seed: 1,
-      service: 'Towing & recovery',
-      rating: '4.8',
-    ),
-    NearbyTechnician(
-      name: 'Maria Santos',
-      distance: '12 km',
-      eta: '~8 min away',
-      seed: 2,
-      service: 'On-site repair',
-      rating: '4.9',
-    ),
-    NearbyTechnician(
-      name: 'James Rivera',
-      distance: '34 km',
-      eta: '~12 min away',
-      seed: 3,
-      service: 'Battery & electrical',
-      rating: '4.7',
-    ),
-    NearbyTechnician(
-      name: 'Angela Cruz',
-      distance: '6 km',
-      eta: '~3 min away',
-      seed: 4,
-      service: 'Roadside assist',
-      rating: '5.0',
-    ),
-  ];
+  @override
+  State<TechniciansTab> createState() => _TechniciansTabState();
+}
+
+class _TechniciansTabState extends State<TechniciansTab> {
+  late final Future<List<NearbyTechnician>> _future = _loadTechnicians();
+
+  Future<List<NearbyTechnician>> _loadTechnicians() async {
+    final data = await TechnicianApi.getAll();
+    return data.asMap().entries.map((entry) {
+      final index = entry.key;
+      final tech = entry.value;
+      return NearbyTechnician(
+        name: tech.name,
+        distance: '-- km',
+        eta: '~-- min away',
+        seed: index + 1,
+        service: tech.expertise,
+        rating: tech.rating,
+      );
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,41 +118,57 @@ class TechniciansTab extends StatelessWidget {
         Expanded(
           child: ColoredBox(
             color: const Color(0xFFFAFBFD),
-            child: ListView.separated(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, bottomPad + 16),
-              itemCount: 1 + _sampleTechs.length,
-              separatorBuilder: (_, index) {
-                if (index == 0) {
-                  return const SizedBox(height: 12);
+            child: FutureBuilder<List<NearbyTechnician>>(
+              future: _future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
                 }
-                return Divider(height: 1, thickness: 1, color: Colors.grey.shade200.withValues(alpha: 0.85));
-              },
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          color: AppColors.accentBlue,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Nearby technicians',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.grey.shade900,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                    ],
-                  );
+                if (snapshot.hasError) {
+                  return const Center(child: Text('Failed to load technicians'));
                 }
-                return NearbyTechnicianTile(data: _sampleTechs[index - 1]);
+                final technicians = snapshot.data ?? const <NearbyTechnician>[];
+                if (technicians.isEmpty) {
+                  return const Center(child: Text('No technicians available'));
+                }
+
+                return ListView.separated(
+                  padding: EdgeInsets.fromLTRB(20, 20, 20, bottomPad + 16),
+                  itemCount: 1 + technicians.length,
+                  separatorBuilder: (_, index) {
+                    if (index == 0) {
+                      return const SizedBox(height: 12);
+                    }
+                    return Divider(height: 1, thickness: 1, color: Colors.grey.shade200.withValues(alpha: 0.85));
+                  },
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: AppColors.accentBlue,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Nearby technicians',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.grey.shade900,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return NearbyTechnicianTile(data: technicians[index - 1]);
+                  },
+                );
               },
             ),
           ),

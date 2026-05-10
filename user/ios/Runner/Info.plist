@@ -52,5 +52,7 @@
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app connects to your Moto ResQ API on your local network during development.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs your location to request nearby roadside assistance.</string>
 </dict>
 </plist>
