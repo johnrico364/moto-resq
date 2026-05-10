@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { ICONS } from "@/app/Shared/Constants/icons";
 import { ViewMember } from "./viewmember/viewmember";
@@ -19,41 +19,7 @@ interface Technician {
   documents: { name: string; date: string; size: string }[];
 }
 
-const MOCK_DATA: Technician[] = [
-  {
-    id: 1,
-    name: "Joshua Mark H. Playda",
-    phone: "+639235614824",
-    expertise: ["Flat Tire", "Towing"],
-    status: "Active",
-    avatar: "/avatars/joshua.jpg",
-    registeredDate: "January 12, 2022",
-    email: "JoshuaMark@gmail.com",
-    location: "Liloan Mandaue City",
-    documents: [
-      { name: "Valid ID", date: "Jan 12, 2023", size: "1.0 MB" },
-      { name: "Certificate", date: "Jan 12, 2023", size: "2.0 MB" },
-    ],
-  },
-  {
-    id: 2,
-    name: "Kent John Brian C. Flores",
-    phone: "+639235614824",
-    expertise: ["Flat Tire", "Towing"],
-    status: "Inactive",
-    avatar: "/avatars/kent.jpg",
-    registeredDate: "January 12, 2022",
-    email: "KentJohn@gmail.com",
-    location: "Liloan Mandaue City",
-    documents: [
-      { name: "Valid ID", date: "Jan 12, 2023", size: "1.0 MB" },
-      { name: "Certificate", date: "Jan 12, 2023", size: "2.0 MB" },
-    ],
-  },
-];
-
-const TOTAL_PAGES = 11;
-const VISIBLE_PAGES = [1, 2, 3, 4, 10, 11];
+const TECHNICIANS_PER_PAGE = 5;
 
 function Avatar({ name, src }: { name: string; src: string }) {
   const [imgError, setImgError] = useState(false);
@@ -121,9 +87,22 @@ function PaginationButton({
   );
 }
 
-export function AllMembers() {
-  const [currentPage, setCurrentPage] = useState(3);
+export function AllMembers({ technicians }: { technicians: Technician[] | null }) {
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedTech, setSelectedTech] = useState<Technician | null>(null);
+  const totalTechnicians = technicians?.length ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalTechnicians / TECHNICIANS_PER_PAGE));
+  const shouldPaginate = totalTechnicians > TECHNICIANS_PER_PAGE;
+  const visiblePages = Array.from({ length: totalPages }, (_, index) => index + 1);
+  const startIndex = (currentPage - 1) * TECHNICIANS_PER_PAGE;
+  const endIndex = startIndex + TECHNICIANS_PER_PAGE;
+  const paginatedTechnicians = shouldPaginate
+    ? technicians?.slice(startIndex, endIndex)
+    : technicians;
+
+  useEffect(() => {
+    setCurrentPage((prevPage) => Math.min(prevPage, totalPages));
+  }, [totalPages]);
 
   return (
     <>
@@ -147,7 +126,7 @@ export function AllMembers() {
             </tr>
           </thead>
           <tbody>
-            {MOCK_DATA.map((tech) => (
+            {paginatedTechnicians?.map((tech) => (
               <tr
                 key={tech.id}
                 className="border-b border-gray-100 last:border-0"
@@ -187,38 +166,36 @@ export function AllMembers() {
           </tbody>
         </table>
 
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 font-medium"
-          >
-            <ICONS.left />
-            Previous
-          </button>
+        {shouldPaginate && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 font-medium"
+            >
+              <ICONS.left />
+              Previous
+            </button>
 
-          <div className="flex items-center gap-1">
-            {VISIBLE_PAGES.map((page, idx) => (
-              <React.Fragment key={page}>
-                {idx === 4 && (
-                  <span className="px-1 text-gray-400 text-sm">...</span>
-                )}
+            <div className="flex items-center gap-1">
+              {visiblePages.map((page) => (
                 <PaginationButton
+                  key={page}
                   page={page}
                   current={currentPage}
                   onClick={setCurrentPage}
                 />
-              </React.Fragment>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(TOTAL_PAGES, p + 1))}
-            className="flex items-center gap-2 text-sm font-bold text-gray-900 hover:text-gray-700"
-          >
-            Next
-            <ICONS.right />
-          </button>
-        </div>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              className="flex items-center gap-2 text-sm font-bold text-gray-900 hover:text-gray-700"
+            >
+              Next
+              <ICONS.right />
+            </button>
+          </div>
+        )}
       </div>
 
       {selectedTech && (

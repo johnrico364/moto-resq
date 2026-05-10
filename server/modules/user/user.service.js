@@ -6,15 +6,24 @@ import jwt from "jsonwebtoken";
 
 import User from "./user.model.js";
 
-/** Valid `expiresIn` for jsonwebtoken: seconds (number), or a short span like `"7d"`, `"12h"`. */
-function resolveJwtExpiresIn() {
-  const raw = process.env.JWT_EXPIRES?.trim();
+function getJwtExpiresIn() {
+  const raw = process.env.JWT_EXPIRES;
   if (!raw) return "7d";
-  if (/^\d+$/.test(raw)) return parseInt(raw, 10);
-  if (/^\d+[smhdw]$/i.test(raw)) return raw;
-  console.warn(
-    `JWT_EXPIRES "${raw}" is invalid; using "7d". Examples: 3600, "1h", "7d".`,
-  );
+
+  const normalized = String(raw).trim().replace(/^['"]|['"]$/g, "");
+  if (!normalized) return "7d";
+
+  const isSecondsNumber = /^\d+$/.test(normalized);
+  const isTimespanString = /^\d+[smhdwy]$/i.test(normalized);
+
+  if (isSecondsNumber) {
+    return Number(normalized);
+  }
+
+  if (isTimespanString) {
+    return normalized;
+  }
+
   return "7d";
 }
 
@@ -69,14 +78,24 @@ export const UserService = {
   },
   // LOGIN USER ====================================
   async loginUser(data) {
+    if (!data?.email || !validator.isEmail(String(data.email).trim())) {
+      throw new Error("Invalid Email Format");
+    }
+
+    if (!data?.password || !String(data.password).trim()) {
+      throw new Error("Password is required");
+    }
+
+    const normalizedEmail = String(data.email).trim().toLowerCase();
+
     // Validations
-    const user = await User.findOne({ email: data.email });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       const error = new Error("Email not found");
       throw error;
     }
 
-    const isMatch = await bcrypt.compare(data.password, user.password);
+    const isMatch = await bcrypt.compare(String(data.password), user.password);
     if (!isMatch) {
       const error = new Error("Invalid password");
       throw error;
@@ -85,7 +104,7 @@ export const UserService = {
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: resolveJwtExpiresIn() },
+      { expiresIn: getJwtExpiresIn() },
     );
 
     const userObj = user.toObject();
