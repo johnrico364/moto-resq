@@ -1,10 +1,40 @@
 "use client";
+import { useEffect, useState } from "react";
 import { Cards } from "../Components/dashboard/cards/card";
 import { NewRequest } from "../Components/dashboard/newrequest/newrequest";
 import { NewUser } from "../Components/dashboard/newuser/newuser";
 import { RecentActivity } from "../Components/dashboard/recentactivity/recentactivity";
+import { useDashboard } from "../Services/Dashboard/useDashboard";
+type DashboardData = {
+  completedServices: number;
+  registeredTechnicians: number;
+  serviceRequests: number;
+  registeredUsers: number;
+  completed_services: number;
+  registered_technician: number;
+  service_request: number;
+  registered_users: number;
+};
 
 export default function Dashboard() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const { fetchDashboard } = useDashboard();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const result = await fetchDashboard();
+      if (result.data !== null) {
+        setData(result.data);
+      }
+      console.log(`data ${JSON.stringify(result.data)}`);
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 25000);
+    return () => clearInterval(interval);
+  }, []);
+
+  console.log(data);
+
   return (
     <div className="flex flex-col w-full">
       <div className="mt-6 mb-8">
@@ -17,10 +47,26 @@ export default function Dashboard() {
           Overview
         </span>
         <div className="grid w-full grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-          <Cards count="1,035" subtitle="Completed Services" icon_name="dashboard" />
-          <Cards count="1,080" subtitle="Registered Technicians" icon_name="drill" />
-          <Cards count="98" subtitle="Service Requests" icon_name="receipt" />
-          <Cards count="1,080" subtitle="Registered Users" icon_name="users" />
+          <Cards
+            count={data?.completedServices ?? "--"}
+            subtitle="Completed Services"
+            icon_name="dashboard"
+          />
+          <Cards
+            count={data?.registeredTechnicians ?? "--"}
+            subtitle="Registered Technicians"
+            icon_name="drill"
+          />
+          <Cards
+            count={data?.serviceRequests ?? "--"}
+            subtitle="Service Requests"
+            icon_name="receipt"
+          />
+          <Cards
+            count={data?.registeredUsers ?? "--"}
+            subtitle="Registered Users"
+            icon_name="users"
+          />
         </div>
       </div>
       <div className="flex flex-col xl:flex-row gap-8 mb-10 items-start">
