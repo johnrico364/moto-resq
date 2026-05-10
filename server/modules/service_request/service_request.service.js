@@ -2,6 +2,8 @@ import path from "path";
 import fs from "fs/promises";
 
 import ServiceRequest from "./service_request.model.js"; // MODEL
+import User from "../user/user.model.js";
+import Technician from "../technician/technician.model.js";
 
 export const ServiceRequestService = {
   // CREATE SERVICE REQUEST ================================================
@@ -13,13 +15,43 @@ export const ServiceRequestService = {
   },
   // GET ALL SERVICE REQUEST ==============================================
   async getAllServiceRequest() {
-    const serviceRequest = await ServiceRequest.find();
+    const serviceRequest = await ServiceRequest.find()
+      .populate("user_id")
+      .populate("technician_id");
     return serviceRequest;
   },
   // GET SERVICE REQUEST BY ID ===========================================
   async getServiceRequestById(id) {
-    const serviceRequest = await ServiceRequest.findById(id);
+    const serviceRequest = await ServiceRequest.findById(id)
+      .populate("user_id")
+      .populate("technician_id");
     return serviceRequest;
+  },
+  // GET DASHBOARD COUNTS ===============================================
+  async getDashboardCounts() {
+    const [
+      completedServices,
+      registeredTechnicians,
+      serviceRequests,
+      registeredUsers,
+    ] = await Promise.all([
+      ServiceRequest.countDocuments({ status: "Completed" }),
+      Technician.countDocuments({ is_deleted: { $ne: true } }),
+      ServiceRequest.countDocuments(),
+      User.countDocuments({ role: "user" }),
+    ]);
+
+    return {
+      completedServices,
+      registeredTechnicians,
+      serviceRequests,
+      registeredUsers,
+      // Backward-compatible keys for existing clients
+      completed_services: completedServices,
+      registered_technician: registeredTechnicians,
+      service_request: serviceRequests,
+      registered_users: registeredUsers,
+    };
   },
   // UPDATE SERVICE REQUEST ====================================
   async updateServiceRequest(id, data) {
