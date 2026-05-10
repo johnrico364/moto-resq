@@ -1,5 +1,6 @@
 "use client";
 import { usePageRouter } from "../PageRouter/usePageRouter";
+import BASE_URL from "@/app/Shared/BASE_URL/BASE_URL";
 
 interface LoginProps {
   email: string;
@@ -21,7 +22,7 @@ export function useAuth() {
     const normalizedPassword = password.trim();
 
     try {
-      const response = await fetch("http://localhost:4000/api/users/auth/signin", {
+      const response = await fetch(`${BASE_URL}/users/auth/signin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -31,7 +32,7 @@ export function useAuth() {
           password: normalizedPassword,
         }),
       });
-      console.log(JSON.stringify(response));
+      console.log("Status:", response.status, response.statusText);
 
       const result = (await response.json()) as LoginResponse;
 
@@ -50,7 +51,10 @@ export function useAuth() {
         data: result.data,
       };
     } catch (error) {
-      console.log(JSON.stringify(error));
+      console.log(
+        `${BASE_URL}/users/auth/signin error:`,
+        JSON.stringify(error),
+      );
       const message =
         error instanceof Error
           ? error.message
@@ -65,4 +69,3 @@ export function useAuth() {
 
   return { login };
 }
-
