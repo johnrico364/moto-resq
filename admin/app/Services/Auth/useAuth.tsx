@@ -1,5 +1,8 @@
 "use client";
+import { useAuthSession } from "./AuthSessionProvider";
+import type { AuthUser } from "./authSession";
 import { usePageRouter } from "../PageRouter/usePageRouter";
+
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
 interface LoginProps {
@@ -16,6 +19,7 @@ interface LoginResponse {
 
 export function useAuth() {
   const { navigate } = usePageRouter();
+  const { setSession } = useAuthSession();
 
   const login = async ({ email, password }: LoginProps) => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -43,6 +47,21 @@ export function useAuth() {
         };
       }
 
+      if (
+        typeof result.token !== "string" ||
+        !result.data ||
+        typeof result.data !== "object"
+      ) {
+        return {
+          success: false,
+          message: "Invalid response from server.",
+        };
+      }
+
+      setSession({
+        token: result.token,
+        user: result.data as AuthUser,
+      });
       navigate("/dashboard");
       return {
         success: true,

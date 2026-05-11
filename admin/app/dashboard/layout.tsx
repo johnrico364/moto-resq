@@ -2,15 +2,24 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ICONS } from "@/app/Shared/Constants/icons";
+import { profileImageToUrl } from "@/app/Services/Auth/authSession";
+import { useAuthSession } from "@/app/Services/Auth/AuthSessionProvider";
 import { Search } from "../Components/dashboard/search/search";
 import { NotificationAndHelp } from "../Components/dashboard/notificationandhelp/notificationandhelp";
 import { ActiveUser } from "../Components/dashboard/activeuser/activeuser";
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const { user, hydrated } = useAuthSession();
   const search = (key: string) => console.log(key);
   const notification = () => console.log("notification click");
   const help = () => console.log("help click");
   const dropDown = () => console.log("drop down");
+
+  const displayName = user?.name ?? (hydrated ? "Admin" : "…");
+  const displayEmail = user?.email ?? "";
+  const avatarUrl = profileImageToUrl(user?.profile_image, BASE_URL);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -69,9 +78,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               onHelpClick={help}
             />
             <ActiveUser
-              username="Cedrick"
-              email="cedrickalegsao@gmail.com"
-              avatarUrl=""
+              username={displayName}
+              email={displayEmail}
+              avatarUrl={avatarUrl ?? ""}
               onDropdown={dropDown}
             />
           </div>
