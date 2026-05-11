@@ -102,4 +102,62 @@ export const DashboardService = {
         : null,
     }));
   },
+
+  async getRequestsOverview() {
+    const [requests, agg] = await Promise.all([
+      ServiceRequest.find({})
+        .sort({ createdAt: -1 })
+        .populate("user_id", "name profile_image")
+        .populate("technician_id", "name profile_image")
+        .lean(),
+      ServiceRequest.aggregate([
+        { $group: { _id: "$problem_type", count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const countByType = Object.fromEntries(
+      agg.map((x) => [x._id, x.count]),
+    );
+
+    const stats = [
+      {
+        label: "Flat Tire Assistance",
+        value: countByType["Flat Tire"] ?? 0,
+      },
+      {
+        label: "Battery Jumpstart",
+        value: countByType["Battery"] ?? 0,
+      },
+      {
+        label: "Towing Service",
+        value: countByType["Towing"] ?? 0,
+      },
+      {
+        label: "Engine Trouble",
+        value: countByType["Engine"] ?? 0,
+      },
+    ];
+
+    const pickPerson = (ref) => {
+      if (!ref || typeof ref !== "object") return null;
+      if (!("_id" in ref)) return null;
+      return {
+        _id: String(ref._id),
+        name: typeof ref.name === "string" ? ref.name : "Unknown",
+        profile_image:
+          typeof ref.profile_image === "string" ? ref.profile_image : null,
+      };
+    };
+
+    const rows = requests.map((r) => ({
+      _id: r._id,
+      problem_type: r.problem_type,
+      status: r.status,
+      createdAt: r.createdAt,
+      user: pickPerson(r.user_id),
+      technician: pickPerson(r.technician_id),
+    }));
+
+    return { stats, requests: rows };
+  },
 };
