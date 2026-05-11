@@ -45,16 +45,45 @@ export function clearSessionStorage(): void {
   sessionStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
 }
 
+/** Strips trailing `/api` so static files resolve to `{origin}/images/...`. */
+export function apiOriginFromEnv(baseUrl: string | undefined): string | undefined {
+  if (!baseUrl?.trim()) {
+    return undefined;
+  }
+  const root = baseUrl.replace(/\/$/, "");
+  return root.replace(/\/api$/i, "");
+}
+
 export function profileImageToUrl(
   profileImage: string | undefined,
   baseUrl: string | undefined,
 ): string | undefined {
-  if (!profileImage?.trim() || !baseUrl?.trim()) {
+  if (!profileImage?.trim()) {
     return undefined;
   }
   if (/^https?:\/\//i.test(profileImage)) {
     return profileImage;
   }
-  const root = baseUrl.replace(/\/$/, "");
-  return `${root}/images/user/${profileImage}`;
+  const origin = apiOriginFromEnv(baseUrl);
+  if (!origin) {
+    return undefined;
+  }
+  return `${origin}/images/user/${profileImage}`;
+}
+
+export function technicianImageToUrl(
+  profileImage: string | undefined,
+  baseUrl: string | undefined,
+): string | undefined {
+  if (!profileImage?.trim()) {
+    return undefined;
+  }
+  if (/^https?:\/\//i.test(profileImage)) {
+    return profileImage;
+  }
+  const origin = apiOriginFromEnv(baseUrl);
+  if (!origin) {
+    return undefined;
+  }
+  return `${origin}/images/technician/${profileImage}`;
 }
