@@ -44,22 +44,6 @@ export function DashboardHeader({
     navigate(`/dashboard/search?q=${encodeURIComponent(t)}`);
   };
 
-  const handleHelpClick = () => {
-    const url = process.env.NEXT_PUBLIC_HELP_URL?.trim();
-    const mail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim();
-    if (url) {
-      window.open(url, "_blank", "noopener,noreferrer");
-      return;
-    }
-    if (mail) {
-      window.location.href = `mailto:${mail}`;
-      return;
-    }
-    window.alert(
-      "Help is not configured. Set NEXT_PUBLIC_HELP_URL or NEXT_PUBLIC_SUPPORT_EMAIL.",
-    );
-  };
-
   return (
     <header className="flex items-center justify-between px-10 py-4 bg-gray-100 shrink-0 mt-10">
       <div className="flex-1 max-w-2xl mr-8">
@@ -70,10 +54,7 @@ export function DashboardHeader({
         />
       </div>
       <div className="flex items-center gap-10">
-        <NotificationAndHelp
-          onHelpClick={handleHelpClick}
-          notificationCount={notificationCount}
-        />
+        <NotificationAndHelp notificationCount={notificationCount} />
         <UserAccountMenu
           username={displayName}
           email={displayEmail}

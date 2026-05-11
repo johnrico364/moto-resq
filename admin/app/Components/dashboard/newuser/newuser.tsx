@@ -20,7 +20,6 @@ function avatarFallback(name: string): string {
 
 export function NewUser({ items, isLoading = false, onSeeAll }: NewUserProps) {
   const BRAND_COLOR = {
-    icon_blue: "text-[#2481EB]",
     button_bg: "bg-[#2181F0]",
   };
 
@@ -57,7 +56,7 @@ export function NewUser({ items, isLoading = false, onSeeAll }: NewUserProps) {
             return (
               <div
                 key={user.id}
-                className="flex h-[44px] items-center justify-between"
+                className="flex h-[44px] items-center"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-[15px]">
                   <img
@@ -74,20 +73,6 @@ export function NewUser({ items, isLoading = false, onSeeAll }: NewUserProps) {
                       {user.email}
                     </span>
                   </div>
-                </div>
-
-                <div
-                  className={`flex shrink-0 items-center space-x-[15px] pl-2 ${BRAND_COLOR.icon_blue}`}
-                >
-                  <button type="button" className="transition hover:opacity-75">
-                    <ICONS.user />
-                  </button>
-                  <button type="button" className="transition hover:opacity-75">
-                    <ICONS.message />
-                  </button>
-                  <button type="button" className="transition hover:opacity-75">
-                    <ICONS.phone />
-                  </button>
                 </div>
               </div>
             );
