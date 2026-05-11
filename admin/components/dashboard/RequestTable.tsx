@@ -41,6 +41,54 @@ function compareRows(a: RequestRow, b: RequestRow, key: SortableColumn, dir: "as
   return 0;
 }
 
+function nameInitial(name: string) {
+  const t = name.trim();
+  if (!t) return "?";
+  return t[0].toUpperCase();
+}
+
+function RequestUserAvatar({
+  name,
+  src,
+  size,
+}: {
+  name: string;
+  src: string | null;
+  size: "sm" | "lg";
+}) {
+  const [imgError, setImgError] = useState(false);
+  const initial = nameInitial(name);
+  const pixels = size === "sm" ? 40 : 44;
+  const boxClass = size === "sm" ? "h-10 w-10" : "h-11 w-11";
+  const textClass = size === "sm" ? "text-sm font-semibold" : "text-base font-semibold";
+
+  if (!src || imgError) {
+    return (
+      <div
+        className={`${boxClass} flex shrink-0 items-center justify-center rounded-full bg-blue-500`}
+        aria-hidden
+      >
+        <span className={`text-white ${textClass}`}>{initial}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${boxClass} shrink-0 overflow-hidden rounded-full bg-gray-200`}>
+      <Image
+        src={src}
+        alt=""
+        width={pixels}
+        height={pixels}
+        className="h-full w-full object-cover"
+        sizes={`${pixels}px`}
+        onError={() => setImgError(true)}
+        unoptimized
+      />
+    </div>
+  );
+}
+
 function SortChevrons({ active, direction }: { active: boolean; direction: "asc" | "desc" }) {
   return (
     <span className="inline-flex flex-col leading-none" aria-hidden>
@@ -153,14 +201,7 @@ export function RequestTable({ rows, pageSize }: RequestTableProps) {
               >
                 <td className="py-4 pr-4">
                   <div className="flex items-center gap-3">
-                    <Image
-                      src={row.avatar}
-                      alt=""
-                      width={40}
-                      height={40}
-                      className="h-10 w-10 rounded-full object-cover"
-                      sizes="40px"
-                    />
+                    <RequestUserAvatar name={row.userName} src={row.avatar} size="sm" />
                     <span className="font-bold text-gray-900">{row.userName}</span>
                   </div>
                 </td>
@@ -196,14 +237,7 @@ export function RequestTable({ rows, pageSize }: RequestTableProps) {
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <Image
-                  src={row.avatar}
-                  alt=""
-                  width={44}
-                  height={44}
-                  className="h-11 w-11 shrink-0 rounded-full object-cover"
-                  sizes="44px"
-                />
+                <RequestUserAvatar name={row.userName} src={row.avatar} size="lg" />
                 <div className="min-w-0">
                   <p className="truncate font-bold text-gray-900">{row.userName}</p>
                   <p className="text-xs text-gray-500">#{row.requestId}</p>

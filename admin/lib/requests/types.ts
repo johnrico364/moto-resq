@@ -1,7 +1,7 @@
 export interface RequestRow {
   id: string;
   userName: string;
-  avatar: string;
+  avatar: string | null;
   requestId: string;
   technicianId: string;
   price: number | null;

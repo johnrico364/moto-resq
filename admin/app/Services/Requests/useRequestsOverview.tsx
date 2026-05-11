@@ -26,10 +26,6 @@ function shortId(raw: unknown): string {
   return s.slice(-7).toUpperCase();
 }
 
-function fallbackAvatar(seed: string): string {
-  return `https://i.pravatar.cc/128?u=${encodeURIComponent(seed)}`;
-}
-
 function mapRequestRow(raw: unknown): RequestRow | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
@@ -61,7 +57,7 @@ function mapRequestRow(raw: unknown): RequestRow | null {
   return {
     id,
     userName,
-    avatar: avatarUrl ?? fallbackAvatar(id),
+    avatar: avatarUrl ?? null,
     requestId: shortId(id),
     technicianId,
     price: null,
