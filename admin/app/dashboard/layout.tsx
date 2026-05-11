@@ -1,30 +1,35 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
+import { Suspense } from "react";
+import { usePathname } from "next/navigation";
 import { ICONS } from "@/app/Shared/Constants/icons";
 import { profileImageToUrl } from "@/app/Services/Auth/authSession";
 import { useAuthSession } from "@/app/Services/Auth/AuthSessionProvider";
-import { Search } from "../Components/dashboard/search/search";
-import { NotificationAndHelp } from "../Components/dashboard/notificationandhelp/notificationandhelp";
-import { ActiveUser } from "../Components/dashboard/activeuser/activeuser";
+import { useAuth } from "@/app/Services/Auth/useAuth";
+import { DashboardHeader } from "./DashboardHeader";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
+function navLinkClass(active: boolean) {
+  return `flex items-center gap-4 text-lg rounded-lg px-2 py-1 -mx-2 transition-opacity ${
+    active
+      ? "bg-white/15 font-semibold"
+      : "hover:opacity-80 font-normal"
+  }`;
+}
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, hydrated } = useAuthSession();
-  const search = (key: string) => console.log(key);
-  const notification = () => console.log("notification click");
-  const help = () => console.log("help click");
-  const dropDown = () => console.log("drop down");
+  const { signOut } = useAuth();
+  const pathname = usePathname();
 
   const displayName = user?.name ?? (hydrated ? "Admin" : "…");
   const displayEmail = user?.email ?? "";
-  const avatarUrl = profileImageToUrl(user?.profile_image, BASE_URL);
+  const avatarUrl = profileImageToUrl(user?.profile_image, BASE_URL) ?? "";
 
   return (
     <div className="flex h-screen bg-gray-100">
-
-      {/* Sidebar */}
       <aside
         className="w-72 text-white flex flex-col shrink-0 rounded-tr-[120px] p-8"
         style={{ backgroundColor: "#1e88e5" }}
@@ -44,50 +49,63 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="border-t border-white/30 mb-10"></div>
 
         <nav className="flex flex-col gap-6 text-lg">
-          <Link href="/dashboard" className="flex items-center gap-4 hover:opacity-80">
+          <Link
+            href="/dashboard"
+            className={navLinkClass(
+              pathname === "/dashboard" || pathname === "/dashboard/search",
+            )}
+          >
             <ICONS.dashboard size={24} /> Dashboard
           </Link>
-          <Link href="/dashboard/users" className="flex items-center gap-4 hover:opacity-80">
+          <Link
+            href="/dashboard/users"
+            className={navLinkClass(pathname === "/dashboard/users")}
+          >
             <ICONS.users size={24} /> Users
           </Link>
-          <Link href="/dashboard/technicians" className="flex items-center gap-4 hover:opacity-80">
+          <Link
+            href="/dashboard/technicians"
+            className={navLinkClass(pathname === "/dashboard/technicians")}
+          >
             <ICONS.user_cog size={24} /> Technicians
           </Link>
-          <Link href="/dashboard/requests" className="flex items-center gap-4 hover:opacity-80">
+          <Link
+            href="/dashboard/requests"
+            className={navLinkClass(pathname === "/dashboard/requests")}
+          >
             <ICONS.file_text size={24} /> Requests
           </Link>
-          <Link href="/dashboard/settings" className="flex items-center gap-4 hover:opacity-80">
+          <Link
+            href="/dashboard/settings"
+            className={navLinkClass(pathname === "/dashboard/settings")}
+          >
             <ICONS.settings size={24} /> Settings
           </Link>
         </nav>
 
         <div className="mt-auto">
-          <Link href="/" className="flex items-center gap-4 text-lg hover:opacity-80">
+          <button
+            type="button"
+            onClick={signOut}
+            className="flex items-center gap-4 text-lg hover:opacity-80 w-full text-left"
+          >
             <ICONS.logout size={24} /> Logout
-          </Link>
+          </button>
         </div>
       </aside>
       <div className="flex flex-col flex-1 overflow-hidden">
-        <header className="flex items-center justify-between px-10 py-4 bg-gray-100 shrink-0 mt-10"  >
-          <div className="flex-1 max-w-2xl mr-8">
-            <Search onSubmit={search} />
-          </div>
-          <div className="flex items-center gap-10">
-            <NotificationAndHelp
-              onNotificationClick={notification}
-              onHelpClick={help}
-            />
-            <ActiveUser
-              username={displayName}
-              email={displayEmail}
-              avatarUrl={avatarUrl ?? ""}
-              onDropdown={dropDown}
-            />
-          </div>
-        </header>
-        <main className="flex-1 overflow-auto px-10 pb-10">
-          {children}
-        </main>
+        <Suspense
+          fallback={
+            <header className="h-[88px] shrink-0 mt-10 px-10 bg-gray-100" />
+          }
+        >
+          <DashboardHeader
+            displayName={displayName}
+            displayEmail={displayEmail}
+            avatarUrl={avatarUrl}
+          />
+        </Suspense>
+        <main className="flex-1 overflow-auto px-10 pb-10">{children}</main>
       </div>
     </div>
   );

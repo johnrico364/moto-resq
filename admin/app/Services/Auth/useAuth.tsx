@@ -1,4 +1,5 @@
 "use client";
+import { useCallback } from "react";
 import { useAuthSession } from "./AuthSessionProvider";
 import type { AuthUser } from "./authSession";
 import { usePageRouter } from "../PageRouter/usePageRouter";
@@ -19,7 +20,12 @@ interface LoginResponse {
 
 export function useAuth() {
   const { navigate } = usePageRouter();
-  const { setSession } = useAuthSession();
+  const { setSession, clearSession } = useAuthSession();
+
+  const signOut = useCallback(() => {
+    clearSession();
+    navigate("/");
+  }, [clearSession, navigate]);
 
   const login = async ({ email, password }: LoginProps) => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -86,5 +92,5 @@ export function useAuth() {
     }
   };
 
-  return { login };
+  return { login, signOut };
 }

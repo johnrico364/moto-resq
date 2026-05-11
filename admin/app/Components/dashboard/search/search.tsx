@@ -1,16 +1,16 @@
 "use client";
 import { ICONS } from "@/app/Shared/Constants/icons";
-import { useState } from "react";
 
 interface SearchProps {
+  value: string;
+  onChange: (key: string) => void;
   onSubmit: (key: string) => void;
 }
 
-export function Search({ onSubmit }: SearchProps) {
-  const [key, setKey] = useState<string>("");
+export function Search({ value, onChange, onSubmit }: SearchProps) {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSubmit(key);
+    onSubmit(value);
   };
 
   return (
@@ -27,9 +27,11 @@ export function Search({ onSubmit }: SearchProps) {
 
       <input
         type="text"
+        value={value}
         className="flex-1 w-full ml-4 text-xl text-gray-800 bg-transparent border-none outline-none placeholder-gray-400 focus:ring-0"
         placeholder="Search"
-        onChange={(e) => setKey(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label="Search users and technicians"
       />
     </form>
   );
