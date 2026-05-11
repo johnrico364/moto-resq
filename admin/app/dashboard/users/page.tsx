@@ -1,15 +1,17 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { Filter } from "@/app/Components/dashboard/filter/filter";
+import { EditUserModal } from "@/app/Components/dashboard/usertable/EditUserModal";
 import { UserTable } from "@/app/Components/dashboard/usertable/usertable";
-import { useUser } from "@/app/Services/User/useUser";
+import { useUser, type DashboardUser } from "@/app/Services/User/useUser";
 
 const LIMIT_OPTIONS = [10, 15, 20] as const;
 type LimitOption = (typeof LIMIT_OPTIONS)[number];
 type StatusFilter = "all" | "active" | "inactive" | "suspended";
 
 export default function Users() {
-  const { users, isLoading, error } = useUser();
+  const { users, isLoading, error, refetch } = useUser();
+  const [editingUser, setEditingUser] = useState<DashboardUser | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
   const [searchText, setSearchText] = useState("");
   const [selectedLimit, setSelectedLimit] = useState<LimitOption>(10);
@@ -79,6 +81,16 @@ export default function Users() {
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
+          onEditUser={setEditingUser}
+        />
+      )}
+
+      {editingUser && (
+        <EditUserModal
+          key={editingUser.id}
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSaved={() => void refetch()}
         />
       )}
     </div>

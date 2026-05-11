@@ -9,6 +9,7 @@ interface UserTableProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  onEditUser?: (user: DashboardUser) => void;
 }
 
 const columns = [
@@ -32,6 +33,7 @@ export function UserTable({
   currentPage,
   totalPages,
   onPageChange,
+  onEditUser,
 }: UserTableProps) {
   const shouldPaginate = totalUsers > 10;
   const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -62,8 +64,8 @@ export function UserTable({
               </td>
             </tr>
           ) : (
-            users.map((user, idx) => (
-            <tr key={idx} className="border-b border-gray-100 last:border-0">
+            users.map((user) => (
+            <tr key={user.id} className="border-b border-gray-100 last:border-0">
               <td className="px-6 py-5 text-gray-500">{user.id}</td>
               <td className="px-6 py-5 font-bold text-gray-900 whitespace-nowrap">{user.name}</td>
               <td className="px-6 py-5 text-gray-400">{user.email}</td>
@@ -86,7 +88,12 @@ export function UserTable({
                 </span>
               </td>
               <td className="px-6 py-5">
-                <button className="text-gray-400 hover:text-gray-600">
+                <button
+                  type="button"
+                  onClick={() => onEditUser?.(user)}
+                  className="text-gray-400 hover:text-gray-600"
+                  aria-label="Edit user"
+                >
                   <span className="text-xl tracking-widest">•••</span>
                 </button>
               </td>
