@@ -5,12 +5,16 @@ import { NotificationsPopover } from "./NotificationsPopover";
 
 interface NotificationAndHelpProps {
   onHelpClick: () => void;
+  notificationCount?: number;
 }
 
-export function NotificationAndHelp({ onHelpClick }: NotificationAndHelpProps) {
+export function NotificationAndHelp({
+  onHelpClick,
+  notificationCount = 0,
+}: NotificationAndHelpProps) {
   return (
     <div className="flex items-center gap-8">
-      <NotificationsPopover />
+      <NotificationsPopover count={notificationCount} />
 
       <button
         type="button"

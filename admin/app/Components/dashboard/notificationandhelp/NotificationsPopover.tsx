@@ -7,7 +7,11 @@ import { useServiceRequests } from "@/app/Services/ServiceRequest/useServiceRequ
 
 const PANEL_LIMIT = 6;
 
-export function NotificationsPopover() {
+interface NotificationsPopoverProps {
+  count?: number;
+}
+
+export function NotificationsPopover({ count = 0 }: NotificationsPopoverProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const { requests, isLoading, error } = useServiceRequests();
@@ -39,13 +43,22 @@ export function NotificationsPopover() {
     <div className="relative" ref={rootRef}>
       <button
         type="button"
-        className="flex items-center justify-center transition-opacity hover:opacity-70 focus:outline-none"
-        aria-label="Notifications"
+        className="relative flex items-center justify-center transition-opacity hover:opacity-70 focus:outline-none"
+        aria-label={
+          count > 0
+            ? `Notifications, ${count} pending`
+            : "Notifications"
+        }
         aria-expanded={open}
         aria-haspopup="true"
         onClick={() => setOpen((v) => !v)}
       >
         <ICONS.bell size={32} className="text-gray-500 pointer-events-none" />
+        {count > 0 ? (
+          <span className="pointer-events-none absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 px-1 text-[11px] font-bold text-white flex items-center justify-center">
+            {count > 99 ? "99+" : count}
+          </span>
+        ) : null}
       </button>
 
       {open ? (

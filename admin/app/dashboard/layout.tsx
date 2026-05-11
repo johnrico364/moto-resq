@@ -7,6 +7,7 @@ import { ICONS } from "@/app/Shared/Constants/icons";
 import { profileImageToUrl } from "@/app/Services/Auth/authSession";
 import { useAuthSession } from "@/app/Services/Auth/AuthSessionProvider";
 import { useAuth } from "@/app/Services/Auth/useAuth";
+import { useDashboardSummary } from "@/app/Services/Dashboard/useDashboard";
 import { DashboardHeader } from "./DashboardHeader";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
@@ -22,11 +23,13 @@ function navLinkClass(active: boolean) {
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, hydrated } = useAuthSession();
   const { signOut } = useAuth();
+  const { summary } = useDashboardSummary();
   const pathname = usePathname();
 
   const displayName = user?.name ?? (hydrated ? "Admin" : "…");
   const displayEmail = user?.email ?? "";
   const avatarUrl = profileImageToUrl(user?.profile_image, BASE_URL) ?? "";
+  const notificationCount = summary?.pendingRequests ?? 0;
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -103,6 +106,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             displayName={displayName}
             displayEmail={displayEmail}
             avatarUrl={avatarUrl}
+            notificationCount={notificationCount}
           />
         </Suspense>
         <main className="flex-1 overflow-auto px-10 pb-10">{children}</main>

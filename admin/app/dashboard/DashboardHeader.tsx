@@ -12,12 +12,14 @@ interface DashboardHeaderProps {
   displayName: string;
   displayEmail: string;
   avatarUrl: string;
+  notificationCount?: number;
 }
 
 export function DashboardHeader({
   displayName,
   displayEmail,
   avatarUrl,
+  notificationCount = 0,
 }: DashboardHeaderProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -68,7 +70,10 @@ export function DashboardHeader({
         />
       </div>
       <div className="flex items-center gap-10">
-        <NotificationAndHelp onHelpClick={handleHelpClick} />
+        <NotificationAndHelp
+          onHelpClick={handleHelpClick}
+          notificationCount={notificationCount}
+        />
         <UserAccountMenu
           username={displayName}
           email={displayEmail}

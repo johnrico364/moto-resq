@@ -1,50 +1,24 @@
 import { ICONS } from "@/app/Shared/Constants/icons";
+import type { DashboardNewUser } from "@/app/Services/Dashboard/useDashboard";
+
 interface NewUserProps {
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string;
+  items: DashboardNewUser[];
+  isLoading?: boolean;
+  onSeeAll?: () => void;
 }
 
-const MOCK_USERS: NewUserProps[] = [
-  {
-    id: "1",
-    name: "Joshua Mark H. Playda",
-    email: "JoshuaMark@gmail.com",
-    avatarUrl:
-      "https://ui-avatars.com/api/?name=JM&background=e7e7e7&color=333",
-  },
-  {
-    id: "2",
-    name: "Joshua Mark H. Playda",
-    email: "JoshuaMark@gmail.com",
-    avatarUrl:
-      "https://ui-avatars.com/api/?name=JM&background=e7e7e7&color=333",
-  },
-  {
-    id: "3",
-    name: "Joshua Mark H. Playda",
-    email: "JoshuaMark@gmail.com",
-    avatarUrl:
-      "https://ui-avatars.com/api/?name=JM&background=e7e7e7&color=333",
-  },
-  {
-    id: "4",
-    name: "Joshua Mark H. Playda",
-    email: "JoshuaMark@gmail.com",
-    avatarUrl:
-      "https://ui-avatars.com/api/?name=JM&background=e7e7e7&color=333",
-  },
-  {
-    id: "5",
-    name: "Joshua Mark H. Playda",
-    email: "JoshuaMark@gmail.com",
-    avatarUrl:
-      "https://ui-avatars.com/api/?name=JM&background=e7e7e7&color=333",
-  },
-];
+function avatarFallback(name: string): string {
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
+  const safe = encodeURIComponent(initials || "?");
+  return `https://ui-avatars.com/api/?name=${safe}&background=e7e7e7&color=333`;
+}
 
-export function NewUser() {
+export function NewUser({ items, isLoading = false, onSeeAll }: NewUserProps) {
   const BRAND_COLOR = {
     icon_blue: "text-[#2481EB]",
     button_bg: "bg-[#2181F0]",
@@ -58,6 +32,8 @@ export function NewUser() {
         </h2>
 
         <button
+          type="button"
+          onClick={onSeeAll}
           className={`group flex items-center gap-[5px] rounded-full px-4 py-[8px] transition-colors hover:bg-blue-600 ${BRAND_COLOR.button_bg}`}
         >
           <span className="text-[12px] font-[600] leading-none tracking-wide text-white">
@@ -71,43 +47,52 @@ export function NewUser() {
         </button>
       </div>
       <div className="flex flex-col gap-[20px] pt-[2px]">
-        {MOCK_USERS.map((user) => (
-          <div
-            key={user.id}
-            className="flex h-[44px] items-center justify-between"
-          >
-            <div className="flex min-w-0 flex-1 items-center gap-[15px]">
-              <img
-                src={user.avatarUrl}
-                alt={`${user.name}'s Default Shape mapped properties.`}
-                className="h-[44px] w-[44px] shrink-0 rounded-full object-cover"
-              />
+        {isLoading && items.length === 0 ? (
+          <p className="px-2 py-6 text-sm text-gray-500">Loading…</p>
+        ) : items.length === 0 ? (
+          <p className="px-2 py-6 text-sm text-gray-500">No users yet.</p>
+        ) : (
+          items.map((user) => {
+            const avatar = user.avatarUrl ?? avatarFallback(user.name);
+            return (
+              <div
+                key={user.id}
+                className="flex h-[44px] items-center justify-between"
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-[15px]">
+                  <img
+                    src={avatar}
+                    alt={user.name}
+                    className="h-[44px] w-[44px] shrink-0 rounded-full object-cover"
+                  />
 
-              <div className="flex min-w-0 flex-1 flex-col text-left justify-center pb-[2px]">
-                <span className="truncate text-[15.5px] font-[800] tracking-tight text-[#0f0f0f] leading-snug">
-                  {user.name}
-                </span>
-                <span className="truncate text-[12.5px] font-[600] tracking-tight text-[#a1a1a1] leading-tight">
-                  {user.email}
-                </span>
+                  <div className="flex min-w-0 flex-1 flex-col text-left justify-center pb-[2px]">
+                    <span className="truncate text-[15.5px] font-[800] tracking-tight text-[#0f0f0f] leading-snug">
+                      {user.name}
+                    </span>
+                    <span className="truncate text-[12.5px] font-[600] tracking-tight text-[#a1a1a1] leading-tight">
+                      {user.email}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  className={`flex shrink-0 items-center space-x-[15px] pl-2 ${BRAND_COLOR.icon_blue}`}
+                >
+                  <button type="button" className="transition hover:opacity-75">
+                    <ICONS.user />
+                  </button>
+                  <button type="button" className="transition hover:opacity-75">
+                    <ICONS.message />
+                  </button>
+                  <button type="button" className="transition hover:opacity-75">
+                    <ICONS.phone />
+                  </button>
+                </div>
               </div>
-            </div>
-
-            <div
-              className={`flex shrink-0 items-center space-x-[15px] pl-2 ${BRAND_COLOR.icon_blue}`}
-            >
-              <button className="transition hover:opacity-75">
-                <ICONS.user />
-              </button>
-              <button className="transition hover:opacity-75">
-                <ICONS.message />
-              </button>
-              <button className="transition hover:opacity-75">
-                <ICONS.phone />
-              </button>
-            </div>
-          </div>
-        ))}
+            );
+          })
+        )}
       </div>
     </div>
   );

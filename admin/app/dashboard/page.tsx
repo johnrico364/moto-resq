@@ -1,39 +1,20 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Cards } from "../Components/dashboard/cards/card";
 import { NewRequest } from "../Components/dashboard/newrequest/newrequest";
 import { NewUser } from "../Components/dashboard/newuser/newuser";
 import { RecentActivity } from "../Components/dashboard/recentactivity/recentactivity";
 import { useDashboard } from "../Services/Dashboard/useDashboard";
-type DashboardData = {
-  completedServices: number;
-  registeredTechnicians: number;
-  serviceRequests: number;
-  registeredUsers: number;
-  completed_services: number;
-  registered_technician: number;
-  service_request: number;
-  registered_users: number;
-};
 
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const { fetchDashboard } = useDashboard();
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const result = await fetchDashboard();
-      if (result.data !== null) {
-        setData(result.data);
-      }
-      console.log(`data ${JSON.stringify(result.data)}`);
-    };
-    fetchData();
-    const interval = setInterval(fetchData, 25000);
-    return () => clearInterval(interval);
-  }, []);
-
-  console.log(data);
+  const router = useRouter();
+  const {
+    summary,
+    newRequests,
+    newUsers,
+    recentActivity,
+    isLoading,
+  } = useDashboard();
 
   return (
     <div className="flex flex-col w-full">
@@ -48,22 +29,22 @@ export default function Dashboard() {
         </span>
         <div className="grid w-full grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           <Cards
-            count={data?.completedServices ?? "--"}
+            count={summary?.completedServices ?? "--"}
             subtitle="Completed Services"
             icon_name="dashboard"
           />
           <Cards
-            count={data?.registeredTechnicians ?? "--"}
+            count={summary?.registeredTechnicians ?? "--"}
             subtitle="Registered Technicians"
             icon_name="drill"
           />
           <Cards
-            count={data?.serviceRequests ?? "--"}
+            count={summary?.serviceRequests ?? "--"}
             subtitle="Service Requests"
             icon_name="receipt"
           />
           <Cards
-            count={data?.registeredUsers ?? "--"}
+            count={summary?.registeredUsers ?? "--"}
             subtitle="Registered Users"
             icon_name="users"
           />
@@ -75,7 +56,7 @@ export default function Dashboard() {
             New Request
           </span>
           <div className="w-full shadow-[0_2px_8px_-4px_rgba(0,0,0,0.1)] rounded-[24px]">
-            <NewRequest />
+            <NewRequest items={newRequests} isLoading={isLoading} />
           </div>
         </div>
 
@@ -84,7 +65,11 @@ export default function Dashboard() {
             New User
           </span>
           <div className="w-full shadow-[0_2px_8px_-4px_rgba(0,0,0,0.1)] rounded-[24px]">
-            <NewUser />
+            <NewUser
+              items={newUsers}
+              isLoading={isLoading}
+              onSeeAll={() => router.push("/dashboard/users")}
+            />
           </div>
         </div>
       </div>
@@ -93,10 +78,15 @@ export default function Dashboard() {
           Recent Activity
         </span>
         <div className="flex flex-col gap-4">
-          <RecentActivity />
-          <RecentActivity />
-          <RecentActivity />
-          <RecentActivity />
+          {isLoading && recentActivity.length === 0 ? (
+            <p className="text-sm text-gray-500">Loading activity…</p>
+          ) : recentActivity.length === 0 ? (
+            <p className="text-sm text-gray-500">No recent activity.</p>
+          ) : (
+            recentActivity.map((item) => (
+              <RecentActivity key={item.id} item={item} />
+            ))
+          )}
         </div>
       </div>
     </div>
