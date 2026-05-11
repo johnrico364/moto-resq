@@ -11,6 +11,7 @@ import {
   addUserVehicle,
   updateUserVehicle,
   deleteUserVehicle,
+  softDeleteUser,
 } from "./user.controller.js";
 
 const router = express.Router();
@@ -30,6 +31,7 @@ router.get("/:id/vehicles", getUserVehicles);
 router.post("/:id/vehicles", addUserVehicle);
 router.patch("/:id/vehicles/:vehicleId", updateUserVehicle);
 router.delete("/:id/vehicles/:vehicleId", deleteUserVehicle);
+router.delete("/:id", softDeleteUser);
 
 // Error handler for multer limits (e.g., fileSize)
 router.use((err, req, res, next) => {

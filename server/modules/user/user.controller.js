@@ -113,3 +113,12 @@ export const deleteUserVehicle = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+
+export const softDeleteUser = async (req, res) => {
+  try {
+    const result = await UserService.softDeleteUser(req.params.id);
+    res.status(200).json({ success: true, ...result });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};

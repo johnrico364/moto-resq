@@ -127,6 +127,28 @@ export async function patchUser(
   return { ok: true };
 }
 
+export async function deleteUser(
+  id: string,
+): Promise<{ ok: boolean; message?: string }> {
+  const response = await fetch(`${USERS_ENDPOINT}/${id}`, {
+    method: "DELETE",
+  });
+
+  const result = (await response.json()) as {
+    success?: boolean;
+    message?: string;
+  };
+
+  if (!response.ok || result.success === false) {
+    return {
+      ok: false,
+      message: result.message ?? "Delete failed.",
+    };
+  }
+
+  return { ok: true };
+}
+
 export const useUser = () => {
   const [users, setUsers] = useState<DashboardUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);

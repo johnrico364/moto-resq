@@ -16,7 +16,7 @@ export function Search({ value, onChange, onSubmit }: SearchProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex items-center w-full bg-white rounded-full px-8 py-4"
+      className="flex items-center w-full bg-white rounded-full px-8 py-4 border border-gray-200 shadow-sm"
     >
       <button
         type="submit"

@@ -22,6 +22,8 @@ const UserSchema = new Schema(
       enum: ["active", "inactive", "suspended"],
       default: "active",
     },
+    is_deleted: { type: Boolean, default: false },
+    deleted_at: { type: Date, default: null },
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
 );

@@ -129,7 +129,7 @@ export const UserService = {
   },
   // GET ALL USERS ===================================================================
   async getAllUsers() {
-    const users = await User.find();
+    const users = await User.find({ is_deleted: { $ne: true } });
     return users;
   },
   // GET USER BY ID ===================================================================
@@ -226,5 +226,18 @@ export const UserService = {
     user.vehicles.pull(vehicleId);
     await user.save();
     return { deleted: true, vehicleId };
+  },
+  // SOFT DELETE USER ===================================================================
+  async softDeleteUser(id) {
+    const user = await User.findOne({
+      _id: id,
+      is_deleted: { $ne: true },
+    });
+    if (!user) throw new Error("User not found");
+
+    await User.findByIdAndUpdate(id, {
+      $set: { is_deleted: true, deleted_at: new Date() },
+    });
+    return { message: "User deleted successfully" };
   },
 };
