@@ -1,6 +1,6 @@
 "use client";
 import { usePageRouter } from "../PageRouter/usePageRouter";
-import BASE_URL from "@/app/Shared/BASE_URL/BASE_URL";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
 interface LoginProps {
   email: string;
