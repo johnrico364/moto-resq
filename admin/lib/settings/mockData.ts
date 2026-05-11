@@ -4,6 +4,7 @@ import type { ServiceCategory, SettingsProfile } from "./types";
 export const SHOW_EMPTY_SERVICE_CATEGORIES = false;
 
 export const MOCK_PROFILE: SettingsProfile = {
+  userId: "mock-user-id",
   fullName: "Cedrick C. Alegsao",
   username: "Cedrick",
   email: "cedrickalegsao@gmail.com",

@@ -13,7 +13,24 @@ function VerifiedBadge() {
   );
 }
 
-export function AccountForm({ initial }: { initial: SettingsProfile }) {
+export interface AccountFormValues {
+  fullName: string;
+  username: string;
+  email: string;
+  phoneLocal: string;
+}
+
+export function AccountForm({
+  initial,
+  onSave,
+  isSaving,
+  saveError,
+}: {
+  initial: SettingsProfile;
+  onSave?: (values: AccountFormValues) => void | Promise<void>;
+  isSaving?: boolean;
+  saveError?: string | null;
+}) {
   const [fullName, setFullName] = useState(initial.fullName);
   const [username, setUsername] = useState(initial.username);
   const [email, setEmail] = useState(initial.email);
@@ -22,7 +39,10 @@ export function AccountForm({ initial }: { initial: SettingsProfile }) {
   return (
     <form
       className="space-y-8"
-      onSubmit={(e) => e.preventDefault()}
+      onSubmit={async (e) => {
+        e.preventDefault();
+        await onSave?.({ fullName, username, email, phoneLocal });
+      }}
       noValidate
     >
       <div className="grid gap-6 md:grid-cols-2 md:gap-x-8">
@@ -89,11 +109,17 @@ export function AccountForm({ initial }: { initial: SettingsProfile }) {
           </div>
         </div>
       </div>
+      {saveError ? (
+        <p className="text-sm text-red-600" role="alert">
+          {saveError}
+        </p>
+      ) : null}
       <button
         type="submit"
-        className="btn rounded-xl border-0 bg-[#110D8C] px-8 text-white shadow-md transition-transform duration-200 hover:scale-[1.02] hover:bg-[#0d0a6e] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        disabled={isSaving}
+        className="btn rounded-xl border-0 bg-[#110D8C] px-8 text-white shadow-md transition-transform duration-200 hover:scale-[1.02] hover:bg-[#0d0a6e] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
       >
-        Update Profile
+        {isSaving ? "Saving…" : "Update Profile"}
       </button>
     </form>
   );

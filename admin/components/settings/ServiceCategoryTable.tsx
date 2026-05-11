@@ -13,6 +13,10 @@ const PAGE_SIZE_OPTIONS = [5, 9, 15] as const;
 
 export type ServiceSortKey = "id" | "serviceName" | "description" | "status";
 
+function rowKey(row: ServiceCategory) {
+  return row.mongoId ?? row.id;
+}
+
 export function ServiceCategoryTable({
   categories,
   sortKey,
@@ -22,6 +26,9 @@ export function ServiceCategoryTable({
   onPageSizeChange,
   currentPage,
   onPageChange,
+  onCreate,
+  onEdit,
+  onDelete,
 }: {
   categories: ServiceCategory[];
   sortKey: ServiceSortKey | null;
@@ -31,6 +38,9 @@ export function ServiceCategoryTable({
   onPageSizeChange: (n: (typeof PAGE_SIZE_OPTIONS)[number]) => void;
   currentPage: number;
   onPageChange: (page: number) => void;
+  onCreate?: () => void;
+  onEdit?: (row: ServiceCategory) => void;
+  onDelete?: (row: ServiceCategory) => void;
 }) {
   const sorted = useMemo(() => {
     const copy = [...categories];
@@ -87,27 +97,34 @@ export function ServiceCategoryTable({
         header: "Action",
         headerClassName: "text-right",
         cellClassName: "text-right",
-        renderCell: (row) => (
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              aria-label={`Edit ${row.serviceName}`}
-              className="btn btn-square btn-sm rounded-lg border-0 bg-blue-500 text-white shadow-sm transition-transform duration-200 hover:scale-105 hover:bg-blue-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            >
-              <Pencil className="h-4 w-4" aria-hidden />
-            </button>
-            <button
-              type="button"
-              aria-label={`Delete ${row.serviceName}`}
-              className="btn btn-square btn-sm rounded-lg border-0 bg-red-500 text-white shadow-sm transition-transform duration-200 hover:scale-105 hover:bg-red-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-            >
-              <Trash2 className="h-4 w-4" aria-hidden />
-            </button>
-          </div>
-        ),
+        renderCell: (row) => {
+          const canMutate = Boolean(row.mongoId);
+          return (
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                aria-label={`Edit ${row.serviceName}`}
+                disabled={!canMutate}
+                onClick={() => canMutate && onEdit?.(row)}
+                className="btn btn-square btn-sm rounded-lg border-0 bg-blue-500 text-white shadow-sm transition-transform duration-200 hover:scale-105 hover:bg-blue-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
+              >
+                <Pencil className="h-4 w-4" aria-hidden />
+              </button>
+              <button
+                type="button"
+                aria-label={`Delete ${row.serviceName}`}
+                disabled={!canMutate}
+                onClick={() => canMutate && onDelete?.(row)}
+                className="btn btn-square btn-sm rounded-lg border-0 bg-red-500 text-white shadow-sm transition-transform duration-200 hover:scale-105 hover:bg-red-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
+              >
+                <Trash2 className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+          );
+        },
       },
     ],
-    [],
+    [onEdit, onDelete],
   );
 
   const handleGenericSort = (key: keyof ServiceCategory) => {
@@ -140,6 +157,7 @@ export function ServiceCategoryTable({
             <FilterButton />
             <button
               type="button"
+              onClick={() => onCreate?.()}
               className="btn gap-2 rounded-xl border-0 bg-blue-500 px-4 text-white shadow-sm transition-transform duration-200 hover:scale-[1.02] hover:bg-blue-600 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
               <Plus className="h-5 w-5" aria-hidden />
@@ -177,6 +195,7 @@ export function ServiceCategoryTable({
           <FilterButton />
           <button
             type="button"
+            onClick={() => onCreate?.()}
             className="btn gap-2 rounded-xl border-0 bg-blue-500 px-4 text-white shadow-sm transition-transform duration-200 hover:scale-[1.02] hover:bg-blue-600 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             <Plus className="h-5 w-5" aria-hidden />
@@ -192,53 +211,60 @@ export function ServiceCategoryTable({
           sortKey={sortKey as keyof ServiceCategory | null}
           sortDir={sortDir}
           onSort={handleGenericSort}
-          getRowKey={(row) => row.id}
+          getRowKey={(row) => rowKey(row)}
         />
       </div>
 
       <div className="space-y-4 md:hidden">
-        {pageRows.map((row) => (
-          <article
-            key={row.id}
-            className="rounded-2xl border border-gray-100 bg-gray-50/50 p-4 shadow-sm transition-colors duration-200 hover:bg-gray-50"
-          >
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Service ID
-                </p>
-                <p className="text-lg font-semibold tabular-nums text-[#110D8C]">{row.id}</p>
+        {pageRows.map((row) => {
+          const canMutate = Boolean(row.mongoId);
+          return (
+            <article
+              key={rowKey(row)}
+              className="rounded-2xl border border-gray-100 bg-gray-50/50 p-4 shadow-sm transition-colors duration-200 hover:bg-gray-50"
+            >
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Service ID
+                  </p>
+                  <p className="text-lg font-semibold tabular-nums text-[#110D8C]">{row.id}</p>
+                </div>
+                <StatusBadge status={row.status} />
               </div>
-              <StatusBadge status={row.status} />
-            </div>
-            <div className="space-y-2 text-sm">
-              <div>
-                <p className="text-xs font-medium text-gray-500">Service Name</p>
-                <p className="font-medium text-gray-900">{row.serviceName}</p>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <p className="text-xs font-medium text-gray-500">Service Name</p>
+                  <p className="font-medium text-gray-900">{row.serviceName}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500">Description</p>
+                  <p className="text-gray-700">{row.description}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500">Description</p>
-                <p className="text-gray-700">{row.description}</p>
+              <div className="mt-4 flex justify-end gap-2 border-t border-gray-100 pt-4">
+                <button
+                  type="button"
+                  aria-label={`Edit ${row.serviceName}`}
+                  disabled={!canMutate}
+                  onClick={() => canMutate && onEdit?.(row)}
+                  className="btn btn-square btn-sm rounded-lg border-0 bg-blue-500 text-white shadow-sm transition-transform duration-200 hover:scale-105 hover:bg-blue-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <Pencil className="h-4 w-4" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Delete ${row.serviceName}`}
+                  disabled={!canMutate}
+                  onClick={() => canMutate && onDelete?.(row)}
+                  className="btn btn-square btn-sm rounded-lg border-0 bg-red-500 text-white shadow-sm transition-transform duration-200 hover:scale-105 hover:bg-red-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                </button>
               </div>
-            </div>
-            <div className="mt-4 flex justify-end gap-2 border-t border-gray-100 pt-4">
-              <button
-                type="button"
-                aria-label={`Edit ${row.serviceName}`}
-                className="btn btn-square btn-sm rounded-lg border-0 bg-blue-500 text-white shadow-sm transition-transform duration-200 hover:scale-105 hover:bg-blue-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-              >
-                <Pencil className="h-4 w-4" aria-hidden />
-              </button>
-              <button
-                type="button"
-                aria-label={`Delete ${row.serviceName}`}
-                className="btn btn-square btn-sm rounded-lg border-0 bg-red-500 text-white shadow-sm transition-transform duration-200 hover:scale-105 hover:bg-red-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-              >
-                <Trash2 className="h-4 w-4" aria-hidden />
-              </button>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
 
       <div className="mt-8 border-t border-gray-100 pt-6">

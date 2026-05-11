@@ -10,6 +10,7 @@ import chatRoutes from "./modules/chat/chat.route.js";
 import serviceRequestRoutes from "./modules/service_request/service_request.route.js";
 import reviewRoutes from "./modules/review/review.route.js";
 import dashboardRoutes from "./modules/dashboard/dashboard.route.js";
+import settingsRoutes from "./modules/settings/settings.route.js";
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use("/api/chats", chatRoutes);
 app.use("/api/service-request", serviceRequestRoutes);
 app.use("/api/review", reviewRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/dashboard", settingsRoutes);
 
 app.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${process.env.PORT}`);
